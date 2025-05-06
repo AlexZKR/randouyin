@@ -1,0 +1,28 @@
+name: Check Python
+
+on:
+  pull_request:
+    branches:
+      - "dev"
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.3"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: make requirements
+
+      - name: Format and lint
+        run: make format
+
+      - name: Test with Pytest
+        run: make tests

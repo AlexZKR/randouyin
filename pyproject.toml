@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools","setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "randouyin"
+authors = [
+  { name="Alex Zakrevsky", email="zakrevskyalex1323@gmail.com" },
+]
+description = "A simple web application that queries douyin (translates query string to Chinese) for random videos and allows to select them for convenient download"
+readme = "README.md"
+requires-python = ">=3.12.3"
+dynamic = ["version","dependencies", "optional-dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+optional-dependencies.dev = { file = ["requirements-dev.txt"] }
+
+[tool.setuptools_scm]
+# can be empty if no extra settings are needed, presence enables setuptools-scm
+
+
+[tool.pytest]
+log_cli=true
+log_cli_level = "DEBUG"
+pythonpath = "randouyin"
+
+[tool.ruff]
+line-length = 88
+lint.ignore = ["E501"]
+lint.select = ["E", "F", "I", "PL", "UP", "W"]
+exclude = ["migrations"]
+fix = true
+target-version = "py313"
+src = ["randouyin", "tests"]
