@@ -1,6 +1,7 @@
 import logging
 
 from playwright.async_api import async_playwright
+from playwright_stealth import Stealth
 
 from randouyin.config.settings import get_settings
 from randouyin.ports.base_scraper import BaseScraper
@@ -11,8 +12,10 @@ logger = logging.getLogger("playwright")
 class PlaywrightScraper(BaseScraper):
     async def __aenter__(self):
         logger.info("Setting up headless browser")
-        self._playwright = await async_playwright().start()
-        self.browser = await self._playwright.chromium.launch(headless=True)
+        self._playwright = await Stealth().use_async(async_playwright()).__aenter__()
+        self.browser = await self._playwright.chromium.launch(
+            headless=get_settings().scraping.USE_HEADLESS_BROWSER
+        )
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
@@ -21,8 +24,17 @@ class PlaywrightScraper(BaseScraper):
         await self._playwright.stop()
 
     async def search_videos(self, query: str) -> list[str]:
+        """Outputs a list of video IDs
+
+        Args:
+            query (str): Query to search Douyin
+
+        Returns:
+            list[str]: list of video IDs
+        """
         page = await self.browser.new_page()
-        await page.goto(get_settings().scraping.douyin_search_url.format(query=query))
-        divs = page.locator("div[id^='waterfall_item']")
-        ids = await divs.evaluate_all("divs => divs.map(div => div.id)")
-        return [id for id in ids]
+        await page.set_viewport_size({"width": 1920, "height": 1080})
+        await page.goto(get_settings().scraping.DOUYIN_SEARCH_URL.format(query=query))
+        items = page.locator(get_settings().scraping.SEARCH_LIST_CONTAINER_LOCATOR)
+        item_ids: list[str] = await items.evaluate_all("nodes => nodes.map(n => n.id)")
+        return [id.split("waterfall_item_")[-1] for id in item_ids]
