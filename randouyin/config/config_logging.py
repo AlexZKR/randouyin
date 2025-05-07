@@ -32,7 +32,7 @@ def setup_logging(log_level: str):
                 "handlers": ["console"],
                 "propagate": False,
             },
-            "httpx": {
+            "playwright": {
                 "level": log_level,
                 "handlers": ["console"],
                 "propagate": False,

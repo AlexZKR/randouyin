@@ -6,15 +6,15 @@ from pydantic_settings import BaseSettings
 from randouyin.config.config_logging import setup_logging
 
 
-class ParsingSettings(BaseModel):
-    douyin_video_list_url: str = "https://www.douyin.com/root/search/{query}"
-    """URL for search results page. Used to parse IDs of videos"""
+class ScrapingSettings(BaseModel):
+    douyin_search_url: str = "https://www.douyin.com/root/search/{query}"
+    """Douyin search URL"""
 
 
 class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
-    parsing: ParsingSettings = ParsingSettings()
+    scraping: ScrapingSettings = ScrapingSettings()
 
 
 @lru_cache
