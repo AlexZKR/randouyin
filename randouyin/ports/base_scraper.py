@@ -19,6 +19,6 @@ class BaseScraper(ABC):
             query (str): query string to search Douyin
 
         Returns:
-            list[str]: List of video ids
+            list[str]: List of video cards HTML
         """
         ...

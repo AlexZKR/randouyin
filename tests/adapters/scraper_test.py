@@ -16,7 +16,7 @@ class TestDouyinScraping:
     async def test_video_search(
         self, scraper: BaseScraper, query: str, result_expectation: int
     ) -> None:
-        """Video search returns list of video ids"""
+        """Video search returns list of video cards HTMLs"""
         async with scraper as s:
             result = await s.search_videos(query=query)
             assert len(result) == result_expectation, (
