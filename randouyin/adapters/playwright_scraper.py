@@ -24,7 +24,7 @@ class PlaywrightScraper(BaseScraper):
         await self._playwright.stop()
 
     async def search_videos(self, query: str) -> list[str]:
-        """Outputs a list of video IDs
+        """Outputs a list of video cards HTML
 
         Args:
             query (str): Query to search Douyin
@@ -36,5 +36,7 @@ class PlaywrightScraper(BaseScraper):
         await page.set_viewport_size({"width": 1920, "height": 1080})
         await page.goto(get_settings().scraping.DOUYIN_SEARCH_URL.format(query=query))
         items = page.locator(get_settings().scraping.SEARCH_LIST_CONTAINER_LOCATOR)
-        item_ids: list[str] = await items.evaluate_all("nodes => nodes.map(n => n.id)")
-        return [id.split("waterfall_item_")[-1] for id in item_ids]
+        html_video_cards: list[str] = await items.evaluate_all(
+            "nodes => nodes.map(n => n.outerHTML)"
+        )
+        return html_video_cards
