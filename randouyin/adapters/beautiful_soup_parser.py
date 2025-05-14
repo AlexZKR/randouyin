@@ -14,14 +14,11 @@ class BeautifulSoupParser(BaseParser):
 
         # 1) Container by id
         container = soup.find("div", attrs={"id": re.compile(r"^waterfall_item_\d+$")})
-        if not container:
-            raise ValueError("Parsing error: container not found")
+
         model["id"] = container["id"].split("waterfall_item_")[-1]
 
         # 3) <img> URL
         img_tag = container.find("img", src=True)
-        if not img_tag:
-            raise ValueError("Parsing error: img not found")
         model["image_url"] = html.unescape(img_tag["src"])
 
         # 4) Duration: find a text node matching HH:MM

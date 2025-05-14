@@ -6,7 +6,6 @@ from randouyin.ports.base_scraper import BaseScraper
 logger = logging.getLogger("test")
 
 
-@pytest.mark.asyncio
 class TestDouyinScraping:
     @pytest.mark.parametrize("query", [("童笑")])
     async def test_video_search(self, scraper: BaseScraper, query: str) -> None:
