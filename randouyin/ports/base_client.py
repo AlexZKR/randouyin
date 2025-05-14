@@ -2,9 +2,9 @@ from abc import ABC, abstractmethod
 
 
 class BaseClient(ABC):
-    """Client to make async requests to Douyin for HTML and video"""
+    """Client to make async requests to Douyin for video"""
 
     @abstractmethod
-    async def get_list_video_page(self, query: str) -> str:
-        """Get list video page by query"""
+    async def download_video(self, url: str) -> None:
+        """Download video file from link"""
         ...
