@@ -6,8 +6,6 @@ router = APIRouter()
 templates = Jinja2Templates(directory="randouyin/drivers/web/templates")
 
 
-@router.get("/{id}", response_class=HTMLResponse)
-async def read_item(request: Request, id: str):
-    return templates.TemplateResponse(
-        request=request, name="index.html", context={"id": id}
-    )
+@router.get("/", response_class=HTMLResponse)
+async def index(request: Request):
+    return templates.TemplateResponse(request=request, name="index.html")

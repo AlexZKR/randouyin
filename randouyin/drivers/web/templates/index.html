@@ -1,12 +1,51 @@
 <html>
 
 <head>
-    <title>Item Details</title>
-    <link href="{{ url_for('static', path='/styles.css') }}" rel="stylesheet">
+    <title>Randouyin</title>
+    <link href="{{ url_for('static', path='/css/styles.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/navbar.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/search-area.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/search-results.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/footer.css') }}" rel="stylesheet">
 </head>
 
 <body>
-    <h1><a href="{{ url_for('read_item', id=id) }}">Item ID: {{ id }}</a></h1>
+    <div class="navbar">
+        <div class="logo">Randouyin</div>
+        <div class="side-btns">
+            <button>Help</button>
+            <button>Settings</button>
+        </div>
+    </div>
+    <div class="search-area">
+        <div class="search-container">
+            <label for="search-input">Search Douyin</label>
+            <input placeholder="Type something" id="search-input" />
+            <span>Auto translation is not introduced yet</span>
+        </div>
+        <div class="search-btns">
+            <button>search</button>
+            <button>filters</button>
+        </div>
+    </div>
+    <div class="search-results">
+        <div class="search-results-heading">
+            <div class="search-query-label">
+                <span>Results for: "children crying"</span>
+                <span class="search-label">
+                    Showing 24 videos
+                </span>
+            </div>
+            <div class="search-results-display-options">
+                <span class="sorting">
+                    Sort by:
+                    <button>Likes</button>
+                </span>
+            </div>
+        </div>
+        <div class="cards"></div>
+    </div>
+    <footer class="footer">footer area</footer>
 </body>
 
 </html>
