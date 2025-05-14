@@ -43,6 +43,28 @@ def search_video_card_html() -> tuple[str, dict]:
 
 
 @pytest.fixture
+def video_tag_html() -> tuple[str, dict, dict]:
+    """Get one video HTML tag and related examples for parsing tests
+
+    Returns:
+        tuple[str, dict, dict]:
+        str: example HTML;
+        dict: dict of `ParsedVideo` model;
+        dict: expected result (`SourcedVideo` model).
+    """
+    with open("tests/example/video_page/input.html") as f:
+        html = f.read()
+
+    from tests.example.video_page.example_video_model import (
+        EXAMPLE_PARSED_VIDEO as example_model,
+    )
+
+    with open("tests/example/video_page/result.json") as f:
+        result = json.load(f)
+    return html, example_model, result
+
+
+@pytest.fixture
 def get_clean_settings_between_tests() -> Generator[None, Any, Any]:
     yield
     get_settings.cache_clear()
