@@ -11,7 +11,10 @@ class ScrapingSettings(BaseModel):
     SEARCH_LIST_CONTAINER_LOCATOR: str = (
         "div#waterFallScrollContainer div[id^='waterfall_item']"
     )
-    """Used to extract """
+    """Used to extract video card containers"""
+
+    SINGLE_VIDEO_TAG: str = "video"
+    """Used to get HTML video element of one video"""
 
     # Scraper
     USE_HEADLESS_BROWSER: bool = True
@@ -20,6 +23,9 @@ class ScrapingSettings(BaseModel):
     # URLs
     DOUYIN_SEARCH_URL: str = "https://www.douyin.com/root/search/{query}"
     """Douyin search URL"""
+
+    DOUYIN_VIDEO_URL: str = "https://www.douyin.com/video/{id}"
+    """URL for single video (has download srcs)"""
 
 
 class Settings(BaseSettings):

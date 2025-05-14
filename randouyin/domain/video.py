@@ -14,3 +14,11 @@ class ParsedVideo(BaseModel):
     date: str
     author: str
     likes: int
+
+
+class SourcedVideo(ParsedVideo):
+    """`ParsedVideo`, selected for download,
+    contains list of sources for download
+    """
+
+    sources: list[str]
