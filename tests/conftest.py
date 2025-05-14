@@ -6,8 +6,10 @@ from typing import Any
 import pytest
 import pytest_asyncio
 from randouyin.adapters.beautiful_soup_parser import BeautifulSoupParser
+from randouyin.adapters.httpx_downloader import HttpxDownloader
 from randouyin.adapters.playwright_scraper import PlaywrightScraper
 from randouyin.config.settings import get_settings
+from randouyin.ports.base_client import BaseClient
 from randouyin.ports.base_parser import BaseParser
 from randouyin.ports.base_scraper import BaseScraper
 
@@ -20,10 +22,16 @@ async def scraper() -> BaseScraper:
     return PlaywrightScraper()
 
 
-@pytest_asyncio.fixture
-async def parser() -> BaseParser:
+@pytest.fixture
+def parser() -> BaseParser:
     logger.info("Setting up test parser")
     return BeautifulSoupParser()
+
+
+@pytest_asyncio.fixture
+async def downloader() -> BaseClient:
+    logger.info("Setting up test downloader")
+    return HttpxDownloader()
 
 
 @pytest.fixture
