@@ -24,14 +24,6 @@ class PlaywrightScraper(BaseScraper):
         await self._playwright.stop()
 
     async def search_videos(self, query: str) -> list[str]:
-        """Outputs a list of video cards HTML
-
-        Args:
-            query (str): Query to search Douyin
-
-        Returns:
-            list[str]: list of video IDs
-        """
         page = await self.browser.new_page()
         await page.set_viewport_size({"width": 1920, "height": 1080})
         await page.goto(get_settings().scraping.DOUYIN_SEARCH_URL.format(query=query))
@@ -39,4 +31,14 @@ class PlaywrightScraper(BaseScraper):
         html_video_cards: list[str] = await items.evaluate_all(
             "nodes => nodes.map(n => n.outerHTML)"
         )
+        # TODO: swap page closing for scrolling
+        await page.close()
         return html_video_cards
+
+    async def get_video(self, id: int) -> str:
+        page = await self.browser.new_page()
+        await page.goto(get_settings().scraping.DOUYIN_VIDEO_URL.format(id=id))
+        item = page.locator(get_settings().scraping.SINGLE_VIDEO_TAG)
+        video_tag: str = await item.evaluate("el => el.outerHTML")
+        await page.close()
+        return video_tag

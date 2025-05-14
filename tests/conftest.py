@@ -26,8 +26,8 @@ async def parser() -> BaseParser:
     return BeautifulSoupParser()
 
 
-@pytest_asyncio.fixture
-async def search_video_card_html() -> tuple[str, dict]:
+@pytest.fixture
+def search_video_card_html() -> tuple[str, dict]:
     """Get one search result video card for parsing tests
 
     Returns:

@@ -22,3 +22,15 @@ class BaseScraper(ABC):
             list[str]: List of video cards HTML
         """
         ...
+
+    @abstractmethod
+    async def get_video(self, id: int) -> str:
+        """Get video HTML tag with sources for download
+
+        Args:
+            id (int): Douyin video ID
+
+        Returns:
+            str: HTML <video> tag with `src` attributes
+        """
+        ...
