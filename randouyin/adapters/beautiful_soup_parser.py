@@ -1,3 +1,4 @@
+import html
 import re
 
 from bs4 import BeautifulSoup
@@ -21,7 +22,7 @@ class BeautifulSoupParser(BaseParser):
         img_tag = container.find("img", src=True)
         if not img_tag:
             raise ValueError("Parsing error: img not found")
-        model["image_url"] = img_tag["src"]
+        model["image_url"] = html.unescape(img_tag["src"])
 
         # 4) Duration: find a text node matching HH:MM
         duration_text = container.find(string=re.compile(r"^\d{2}:\d{2}$"))
@@ -36,20 +37,13 @@ class BeautifulSoupParser(BaseParser):
                 likes = int(sib.string)
         model["likes"] = likes
 
-        # 6) Title: find the videoImage container, then its parent → next sibling → first div
-        #    videoImage container is the DIV with style "padding-top: xxx%;"
+        # 6) Title
         image_container = container.find(
             "div", attrs={"style": re.compile(r"padding-top:\s*\d+(\.\d+)?%;")}
         )
-        title = None
-        if image_container:
-            # climb up to <div class="flex flex-col"> then down into description
-            parent = image_container.find_parent("div")
-            # this assumes structure: parent → next_sibling is the desc wrapper
-            desc_wrapper = parent.find_next_sibling("div")
-            for el in parent.children:
-                if el.text:
-                    model["title"] = title
+        bottom_container = image_container.next_sibling.next_sibling
+        title_container = bottom_container.next.next
+        model["title"] = title_container.find_next("div").text
 
         # 7) Author & date: look in the last metadata div
         author = date = None
