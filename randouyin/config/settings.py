@@ -20,6 +20,9 @@ class ScrapingSettings(BaseModel):
     USE_HEADLESS_BROWSER: bool = True
     """Use headless (without UI) or not (with UI) browser for playwright scraping"""
 
+    SEARCH_PAGE_LOADING_TIMEOUT: float = 10000
+    """Page takes some time to load and display the content"""
+
     # URLs
     DOUYIN_SEARCH_URL: str = "https://www.douyin.com/root/search/{query}"
     """Douyin search URL"""

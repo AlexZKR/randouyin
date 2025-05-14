@@ -24,15 +24,24 @@ class PlaywrightScraper(BaseScraper):
         await self._playwright.stop()
 
     async def search_videos(self, query: str) -> list[str]:
-        page = await self.browser.new_page()
-        await page.set_viewport_size({"width": 1920, "height": 1080})
-        await page.goto(get_settings().scraping.DOUYIN_SEARCH_URL.format(query=query))
-        items = page.locator(get_settings().scraping.SEARCH_LIST_CONTAINER_LOCATOR)
-        html_video_cards: list[str] = await items.evaluate_all(
-            "nodes => nodes.map(n => n.outerHTML)"
-        )
-        # TODO: swap page closing for scrolling
-        await page.close()
+        while True:
+            logger.info(f"Searching for videos, query: {query}")
+            page = await self.browser.new_page()
+            await page.set_viewport_size({"width": 1920, "height": 1080})
+            await page.goto(
+                get_settings().scraping.DOUYIN_SEARCH_URL.format(query=query)
+            )
+            await page.wait_for_load_state(
+                "load", timeout=get_settings().scraping.SEARCH_PAGE_LOADING_TIMEOUT
+            )
+            items = page.locator(get_settings().scraping.SEARCH_LIST_CONTAINER_LOCATOR)
+            html_video_cards: list[str] = await items.evaluate_all(
+                "nodes => nodes.map(n => n.outerHTML)"
+            )
+            # TODO: swap page closing for scrolling
+            await page.close()
+            if len(html_video_cards) > 0:
+                break
         return html_video_cards
 
     async def get_video(self, id: int) -> str:
