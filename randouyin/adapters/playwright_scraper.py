@@ -32,7 +32,8 @@ class PlaywrightScraper(BaseScraper):
                 get_settings().scraping.DOUYIN_SEARCH_URL.format(query=query)
             )
             await page.wait_for_load_state(
-                "load", timeout=get_settings().scraping.SEARCH_PAGE_LOADING_TIMEOUT
+                "domcontentloaded",
+                timeout=get_settings().scraping.SEARCH_PAGE_LOADING_TIMEOUT,
             )
             items = page.locator(get_settings().scraping.SEARCH_LIST_CONTAINER_LOCATOR)
             html_video_cards: list[str] = await items.evaluate_all(
