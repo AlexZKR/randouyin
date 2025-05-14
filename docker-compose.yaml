@@ -1,0 +1,18 @@
+services:
+  web:
+    container_name: rand-web
+    hostname: randouyin
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    restart: on-failure
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./randouyin:/app/randouyin
+    networks:
+      - randouyin-network
+
+networks:
+  randouyin-network:
+    driver: bridge
