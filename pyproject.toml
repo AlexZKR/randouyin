@@ -20,10 +20,36 @@ optional-dependencies.dev = { file = ["requirements-dev.txt"] }
 # can be empty if no extra settings are needed, presence enables setuptools-scm
 
 
-[tool.pytest]
+[tool.pytest.ini_options]
 log_cli=true
 log_cli_level = "DEBUG"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 pythonpath = "randouyin"
+
+[tool.coverage.run]
+concurrency = ["greenlet", "thread"]
+omit = [
+    "tests/*",
+    "*/__init__.py",
+    "*/config/*",
+    "*/ports/*",
+]
+source = ["trainee_ums"]
+branch = true
+
+[tool.coverage.report]
+exclude_also = [
+    "def __repr__",
+    "if self\\.debug",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "pass",
+    "@(abc\\.)?abstractmethod",
+]
+ignore_errors = true
 
 [tool.ruff]
 line-length = 88
