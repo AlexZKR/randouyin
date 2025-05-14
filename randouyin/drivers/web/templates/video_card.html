@@ -1,0 +1,17 @@
+<div class="card_container">
+    <div class="video_card">
+        <div class="card-upper-container">
+            <img src="{{ video.img }}" alt="cover for {{ video.id }}" />
+        </div>
+        <div class="card-bottom-container">
+            <span class="video_title">{{ video.title }}</span>
+            <div class="video_info_row">
+                <span class="video_likes">Likes: {{ video.likes }}</span>
+                <span class="video_date">Date: {{ video.date }}</span>
+            </div>
+            <div class="video_author">
+                <span>@{{ video.author }}</span>
+            </div>
+        </div>
+    </div>
+</div>

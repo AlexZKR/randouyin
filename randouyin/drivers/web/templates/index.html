@@ -19,23 +19,25 @@
             <button>Settings</button>
         </div>
     </div>
-    <div class="search-area">
-        <div class="search-container">
-            <label for="search-input">Search Douyin</label>
-            <input placeholder="Type something" id="search-input" />
-            <span>Auto translation is not introduced yet</span>
+    <form method="post" action="/search">
+        <div class="search-area">
+            <div class="search-container">
+                <label for="search-input">Search Douyin</label>
+                <input type="text" placeholder="Type something" id="search-input" name="query" />
+                <span>Auto translation is not introduced yet</span>
+            </div>
+            <div class="search-btns">
+                <input type="submit" value="Search" />
+                <button>filters</button>
+            </div>
         </div>
-        <div class="search-btns">
-            <button>search</button>
-            <button>filters</button>
-        </div>
-    </div>
+    </form>
     <div class="search-results">
         <div class="search-results-heading">
             <div class="search-query-label">
-                <span>Results for: "children crying"</span>
+                <span>Results for: {{ query }}</span>
                 <span class="search-label">
-                    Showing 24 videos
+                    Showing {{ videos | length }} videos
                 </span>
             </div>
             <div class="search-results-display-options">
@@ -46,26 +48,9 @@
             </div>
         </div>
         <div class="cards">
-            <div class="card_container">
-                <div class="video_card">
-                    <div class="card-upper-container">
-                        <img src="https://p3-pc-sign.douyinpic.com/image-cut-tos-priv/d5993cbfb6b52ab3bfe0da07b8f7094f~tplv-dy-resize-origshort-autoq-75:330.jpeg?biz_tag=pcweb_cover&card_type=153&column_n=0&from=327834062&lk3s=138a59ce&s=PackSourceEnum_SEARCH&sc=cover&se=false&x-expires=2062594800&x-signature=3VNLJNh6S8ScTetyFw2vKd7tReQ%3D"
-                            alt="video_cover" />
-                    </div>
-                    <div class="card-bottom-container">
-                        <span class="video_title">title</span>
-                        <div class="video_info_row">
-                            <span class="video_likes">Likes: 150</span>
-                            <span class="video_date">Date: 1 day ago</span>
-                        </div>
-                        <div class="video_author">
-                            <span>@video_author</span>
-                        </div>
-
-                    </div>
-                </div>
-
-            </div>
+            {% for video in videos %}
+            {% include "video_card.html" %}
+            {% endfor %}
         </div>
     </div>
     <footer class="footer">footer area</footer>
