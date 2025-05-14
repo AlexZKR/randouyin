@@ -2,7 +2,7 @@
 
 requirements:
 	python3.12 -m pip install --upgrade pip -r requirements.txt -r requirements-dev.txt \
-	&& playwright install chromium
+	&& playwright install chromium --with-deps
 
 format:
 	ruff check --fix

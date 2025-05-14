@@ -1,4 +1,4 @@
-FROM python:3.12.3-slim-bookworm
+FROM mcr.microsoft.com/playwright:v1.52.0-noble
 
 ENV USER=randouyin
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && useradd -m -u 1001 $USER
+
 
 WORKDIR $APP_DIR
 COPY requirements.txt requirements-dev.txt Makefile  ./
