@@ -6,19 +6,34 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     APP_DIR="/app" \
     PATH="/home/$USER/.local/bin:$PATH"
 
+# Installing dependencies, along with make, git and python with pip
 RUN apt-get update && apt-get install --no-install-recommends -y \
-    && apt-get -y install make git \
+    && apt-get -y install make git python3-pip python3-venv \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && useradd -m -u 1001 $USER
+    && useradd -m $USER \
+    && usermod -u 1001 -o $USER \
+    && groupmod -g 1001 -o $USER \
+    && chown -R 1001:1001 /home/$USER \
+    && rm -rf /var/lib/apt/lists/*
 
-
+# Setting home folder as workdir, copying dependencies files
 WORKDIR $APP_DIR
 COPY requirements.txt requirements-dev.txt Makefile  ./
+
+#Switching to non-root user
 RUN chown -R $USER:$USER $APP_DIR
 USER $USER
 
-RUN make requirements
+#Creating and bootstraping venv, installing dependencies with make
+RUN python3 -m venv venv \
+    && . venv/bin/activate \
+    && make requirements
+
+#Append venv to path so that uvicorn and other venv packages can be executed
+ENV PATH="/app/venv/bin:$PATH"
+
+# Copying code in the end to make use of layer caching
 COPY randouyin randouyin
 
+# Running the app
 CMD [ "uvicorn", "randouyin.drivers.web.main:app", "--host", "0.0.0.0", "--workers", "4", "--reload" ]

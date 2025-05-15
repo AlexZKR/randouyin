@@ -2,7 +2,7 @@
 
 requirements:
 	python3.12 -m pip install --upgrade pip -r requirements.txt -r requirements-dev.txt \
-	&& playwright install chromium --with-deps
+	&& playwright install chromium
 
 local:
 	docker compose up --build
