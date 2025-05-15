@@ -1,5 +1,6 @@
 import html
 import re
+from venv import logger
 
 from bs4 import BeautifulSoup
 
@@ -38,7 +39,7 @@ class BeautifulSoupParser(BaseParser):
         image_container = container.find(
             "div", attrs={"style": re.compile(r"padding-top:\s*\d+(\.\d+)?%;")}
         )
-        bottom_container = image_container.next_sibling.next_sibling
+        bottom_container = image_container.find_next_sibling("div")
         title_container = bottom_container.next.next
         model["title"] = title_container.find_next("div").text
 
@@ -54,6 +55,8 @@ class BeautifulSoupParser(BaseParser):
                 break
         model["author"] = author
         model["date"] = date
+
+        logger.info(f"\n\n\n {model} \n\n\n")
 
         return ParsedVideo(**model)
 

@@ -24,7 +24,7 @@ class ScrapingSettings(BaseModel):
     """Page takes some time to load and display the content"""
 
     # URLs
-    DOUYIN_SEARCH_URL: str = "https://www.douyin.com/root/search/{query}"
+    DOUYIN_SEARCH_URL: str = "https://www.douyin.com/search/{query}"
     """Douyin search URL"""
 
     DOUYIN_VIDEO_URL: str = "https://www.douyin.com/video/{id}"

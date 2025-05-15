@@ -13,7 +13,7 @@ class ParsedVideo(BaseModel):
     title: str
     date: str
     author: str
-    likes: int
+    likes: int | None
 
 
 class SourcedVideo(ParsedVideo):

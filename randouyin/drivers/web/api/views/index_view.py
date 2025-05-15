@@ -30,9 +30,18 @@ async def search_videos(
         logger.info("Searching for videos")
         html_list = await s.search_videos(query)
         logger.info(f"Found {len(html_list)} videos")
-        with open("res.html", "w") as f:
-            f.write(html_list[0])
-        videos = [parser.parse_video_card(html).model_dump() for html in html_list]
+        # videos = [parser.parse_video_card(html).model_dump() for html in html_list]
+
+        videos = []
+        i = 0
+        for h in html_list:
+            logger.info(f"Parsing {i} video")
+            logger.info(f"\n\n{h}\n\n\n")
+            if "直播中" in h:  # skip live broadcasts
+                continue
+            m = parser.parse_video_card(h)
+            videos.append(m.model_dump())
+            i += 1
 
         return templates.TemplateResponse(
             "index.html", {"request": request, "query": query, "videos": videos}

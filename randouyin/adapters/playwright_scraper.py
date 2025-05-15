@@ -14,7 +14,12 @@ class PlaywrightScraper(BaseScraper):
         logger.info("Setting up headless browser")
         self._playwright = await Stealth().use_async(async_playwright()).__aenter__()
         self.browser = await self._playwright.chromium.launch(
-            headless=get_settings().scraping.USE_HEADLESS_BROWSER
+            headless=get_settings().scraping.USE_HEADLESS_BROWSER,
+            args=[
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-gpu",
+            ],
         )
         return self
 
@@ -27,12 +32,12 @@ class PlaywrightScraper(BaseScraper):
         while True:
             logger.info(f"Searching for videos, query: {query}")
             page = await self.browser.new_page()
-            await page.set_viewport_size({"width": 1920, "height": 1080})
+            # await page.set_viewport_size({"width": 1920, "height": 1080})
             await page.goto(
                 get_settings().scraping.DOUYIN_SEARCH_URL.format(query=query)
             )
             await page.wait_for_load_state(
-                "domcontentloaded",
+                "load",
                 timeout=get_settings().scraping.SEARCH_PAGE_LOADING_TIMEOUT,
             )
             items = page.locator(get_settings().scraping.SEARCH_LIST_CONTAINER_LOCATOR)
