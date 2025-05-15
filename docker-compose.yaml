@@ -4,8 +4,17 @@ services:
     hostname: randouyin
     build:
       context: .
-      dockerfile: ./Dockerfile
+      dockerfile: ./Dockerfile.python
     restart: on-failure
+    init: true
+    ipc: host
+    shm_size: 1g
+    security_opt:
+      - seccomp=./seccomp_profile.json
+    cap_add:
+      - SYS_ADMIN
+    extra_hosts:
+      - "hostmachine:host-gateway"
     ports:
       - "8000:8000"
     volumes:
