@@ -1,0 +1,42 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Debug Tests",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "purpose": ["debug-test"],
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+
+    {
+      "name": "Debug in Docker",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 8000
+      },
+      "pathMappings": [
+        // allows to add breakpoints in local code and map them to remote files
+        // for local code
+        {
+          "localRoot": "${workspaceFolder}/randouyin",
+          "remoteRoot": "/app/randouyin"
+        },
+        // for libs code
+        {
+          "localRoot": "venv",
+          "remoteRoot": "/app/venv"
+        }
+      ],
+      "jinja": true,
+      "justMyCode": false
+    }
+  ]
+}
