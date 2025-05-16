@@ -1,6 +1,5 @@
 import html
 import re
-from venv import logger
 
 from bs4 import BeautifulSoup
 
@@ -56,7 +55,7 @@ class BeautifulSoupParser(BaseParser):
         model["author"] = author
         model["date"] = date
 
-        logger.info(f"\n\n\n {model} \n\n\n")
+        # logger.info(f"\n\n\n {model} \n\n\n")
 
         return ParsedVideo(**model)
 

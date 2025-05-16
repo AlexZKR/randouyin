@@ -9,7 +9,7 @@ class ParsedVideo(BaseModel):
 
     id: int
     image_url: str
-    duration: str
+    duration: str | None
     title: str
     date: str
     author: str

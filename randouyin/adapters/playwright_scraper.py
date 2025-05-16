@@ -34,11 +34,15 @@ class PlaywrightScraper(BaseScraper):
             page = await self.browser.new_page()
             # await page.set_viewport_size({"width": 1920, "height": 1080})
             await page.goto(
-                get_settings().scraping.DOUYIN_SEARCH_URL.format(query=query)
+                get_settings().scraping.DOUYIN_SEARCH_URL.format(query=query),
+                wait_until="commit",
             )
-            await page.wait_for_load_state(
-                "load",
-                timeout=get_settings().scraping.SEARCH_PAGE_LOADING_TIMEOUT,
+            # await page.wait_for_load_state(
+            #     "load",
+            #     timeout=get_settings().scraping.SEARCH_PAGE_LOADING_TIMEOUT,
+            # )
+            await page.wait_for_selector(
+                get_settings().scraping.SEARCH_LIST_CONTAINER_LOCATOR
             )
             items = page.locator(get_settings().scraping.SEARCH_LIST_CONTAINER_LOCATOR)
             html_video_cards: list[str] = await items.evaluate_all(
