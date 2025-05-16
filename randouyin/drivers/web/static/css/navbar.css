@@ -1,0 +1,20 @@
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 3em;
+
+    background-color: gray;
+}
+
+.navbar>* {
+    margin: 0 2em;
+}
+
+.logo {
+    background-color: red;
+}
+
+.side-btns {
+    background-color: red;
+}

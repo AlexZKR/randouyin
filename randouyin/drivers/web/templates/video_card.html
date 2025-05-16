@@ -1,0 +1,22 @@
+<div class="card_container">
+    <div class="video_card">
+        <div class="card-upper-container">
+            <img src="{{ video.image_url }}" alt="cover for {{ video.id }}" />
+        </div>
+        <div class="card-bottom-container">
+            <span class="video_title">{{ video.title }}</span>
+            <div class="video_info_row">
+                <span class="video_likes">Likes: {{ video.likes }}</span>
+                <span class="video_date">Date: {{ video.date }}</span>
+            </div>
+            <div class="video_author">
+                <span>@{{ video.author }}</span>
+            </div>
+            <form action="{{ url_for('download_video', id=video.id) }}" method="post" style="margin-top:8px;">
+                <button type="submit" class="download-btn">
+                    ⬇ Download
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,6 +1,8 @@
 coverage
 pytest
+pytest_asyncio
 pytest-cov
 pre-commit
 ruff
 mypy
+debugpy
