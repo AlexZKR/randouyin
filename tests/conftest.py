@@ -43,7 +43,7 @@ def search_video_card_html() -> tuple[str, dict]:
         str: HTML string of search result video card
         dict: expected parsing result
     """
-    with open("tests/example/search_video_card/input_2.html") as f:
+    with open("tests/example/search_video_card/input_1.html") as f:
         html = f.read()
     with open("tests/example/search_video_card/result.json") as f:
         result = json.load(f)
