@@ -12,6 +12,11 @@
             <div class="video_author">
                 <span>@{{ video.author }}</span>
             </div>
+            <form action="{{ url_for('download_video', id=video.id) }}" method="post" style="margin-top:8px;">
+                <button type="submit" class="download-btn">
+                    ⬇ Download
+                </button>
+            </form>
         </div>
     </div>
 </div>

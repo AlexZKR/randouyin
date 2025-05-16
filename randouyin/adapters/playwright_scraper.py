@@ -59,8 +59,13 @@ class PlaywrightScraper(BaseScraper):
         await page.goto(
             get_settings().scraping.DOUYIN_VIDEO_URL.format(id=id), wait_until="commit"
         )
-        await page.wait_for_selector(get_settings().scraping.SINGLE_VIDEO_TAG)
-        item = page.locator(get_settings().scraping.SINGLE_VIDEO_TAG)
+        await page.wait_for_selector(
+            get_settings().scraping.SINGLE_VIDEO_TAG, state="attached"
+        )
+        item = page.locator(get_settings().scraping.SINGLE_VIDEO_TAG).first
+        # await item.wait_for(state="attached", timeout=15000)
+
         video_tag: str = await item.evaluate("el => el.outerHTML")
+        logger.info(video_tag)
         await page.close()
         return video_tag
