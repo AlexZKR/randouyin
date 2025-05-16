@@ -36,7 +36,7 @@ async def search_videos(
         i = 0
         for h in html_list:
             logger.info(f"Parsing {i} video")
-            logger.info(f"\n\n{h}\n\n\n")
+            # logger.info(f"\n\n{h}\n\n\n")
             if "直播中" in h:  # skip live broadcasts
                 continue
             m = parser.parse_video_card(h)
