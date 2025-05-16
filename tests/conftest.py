@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 import pytest_asyncio
 from randouyin.adapters.beautiful_soup_parser import BeautifulSoupParser
-from randouyin.adapters.httpx_downloader import HttpxDownloader
+from randouyin.adapters.httpx_client import HttpxClient
 from randouyin.adapters.playwright_scraper import PlaywrightScraper
 from randouyin.config.settings import get_settings
 from randouyin.ports.base_client import BaseClient
@@ -31,7 +31,7 @@ def parser() -> BaseParser:
 @pytest_asyncio.fixture
 async def downloader() -> BaseClient:
     logger.info("Setting up test downloader")
-    return HttpxDownloader()
+    return HttpxClient()
 
 
 @pytest.fixture

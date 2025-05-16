@@ -3,7 +3,7 @@ from httpx import AsyncClient
 from randouyin.ports.base_client import BaseClient
 
 
-class HttpxDownloader(BaseClient):
+class HttpxClient(BaseClient):
     async def download_video(self, url: str) -> None:
         async with AsyncClient() as client:
             async with client.stream("GET", url, follow_redirects=True) as response:
