@@ -1,0 +1,24 @@
+.search-results {
+    display: flex;
+    flex-direction: column;
+    margin: 2em 2em;
+
+}
+
+.search-results-heading {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    background-color: gray;
+}
+
+.search-query-label {
+    display: flex;
+    flex-direction: column;
+    background-color: rgb(74, 83, 60);
+}
+
+.search-results-display-options {
+    background-color: red;
+    margin-right: 2em;
+}

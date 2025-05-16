@@ -9,16 +9,17 @@ class ParsedVideo(BaseModel):
 
     id: int
     image_url: str
-    duration: str
+    duration: str | None
     title: str
     date: str
     author: str
-    likes: int
+    likes: int | None
 
 
-class SourcedVideo(ParsedVideo):
-    """`ParsedVideo`, selected for download,
+class SourcedVideo(BaseModel):
+    """Video, selected for download,
     contains list of sources for download
     """
 
+    id: int
     sources: list[str]

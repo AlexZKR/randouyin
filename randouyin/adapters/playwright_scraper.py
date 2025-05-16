@@ -14,7 +14,12 @@ class PlaywrightScraper(BaseScraper):
         logger.info("Setting up headless browser")
         self._playwright = await Stealth().use_async(async_playwright()).__aenter__()
         self.browser = await self._playwright.chromium.launch(
-            headless=get_settings().scraping.USE_HEADLESS_BROWSER
+            headless=get_settings().scraping.USE_HEADLESS_BROWSER,
+            args=[
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-gpu",
+            ],
         )
         return self
 
@@ -27,12 +32,17 @@ class PlaywrightScraper(BaseScraper):
         while True:
             logger.info(f"Searching for videos, query: {query}")
             page = await self.browser.new_page()
-            await page.set_viewport_size({"width": 1920, "height": 1080})
+            # await page.set_viewport_size({"width": 1920, "height": 1080})
             await page.goto(
-                get_settings().scraping.DOUYIN_SEARCH_URL.format(query=query)
+                get_settings().scraping.DOUYIN_SEARCH_URL.format(query=query),
+                wait_until="commit",
             )
-            await page.wait_for_load_state(
-                "load", timeout=get_settings().scraping.SEARCH_PAGE_LOADING_TIMEOUT
+            # await page.wait_for_load_state(
+            #     "load",
+            #     timeout=get_settings().scraping.SEARCH_PAGE_LOADING_TIMEOUT,
+            # )
+            await page.wait_for_selector(
+                get_settings().scraping.SEARCH_LIST_CONTAINER_LOCATOR
             )
             items = page.locator(get_settings().scraping.SEARCH_LIST_CONTAINER_LOCATOR)
             html_video_cards: list[str] = await items.evaluate_all(
@@ -46,8 +56,16 @@ class PlaywrightScraper(BaseScraper):
 
     async def get_video(self, id: int) -> str:
         page = await self.browser.new_page()
-        await page.goto(get_settings().scraping.DOUYIN_VIDEO_URL.format(id=id))
-        item = page.locator(get_settings().scraping.SINGLE_VIDEO_TAG)
+        await page.goto(
+            get_settings().scraping.DOUYIN_VIDEO_URL.format(id=id), wait_until="commit"
+        )
+        await page.wait_for_selector(
+            get_settings().scraping.SINGLE_VIDEO_TAG, state="attached"
+        )
+        item = page.locator(get_settings().scraping.SINGLE_VIDEO_TAG).first
+        # await item.wait_for(state="attached", timeout=15000)
+
         video_tag: str = await item.evaluate("el => el.outerHTML")
+        logger.info(video_tag)
         await page.close()
         return video_tag

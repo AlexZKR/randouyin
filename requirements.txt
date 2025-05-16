@@ -4,3 +4,7 @@ pydantic
 pydantic-settings
 playwright
 git+https://github.com/Mattwmaster58/playwright_stealth@rc4
+fastapi
+jinja2
+uvicorn
+python-multipart

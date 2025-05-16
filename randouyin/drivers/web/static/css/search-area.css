@@ -1,0 +1,27 @@
+.search-area {
+    display: flex;
+    justify-content: space-around;
+    min-height: 5em;
+    margin: 2em 3em;
+
+    background-color: lightgray;
+}
+
+.search-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    padding: 0 10px;
+    width: 100%;
+}
+
+.search-btns {
+    display: flex;
+    align-items: center;
+    background-color: red;
+}
+
+.search-btns>button {
+    margin: 0 10px;
+}
