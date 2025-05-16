@@ -16,9 +16,10 @@ class ParsedVideo(BaseModel):
     likes: int | None
 
 
-class SourcedVideo(ParsedVideo):
-    """`ParsedVideo`, selected for download,
+class SourcedVideo(BaseModel):
+    """Video, selected for download,
     contains list of sources for download
     """
 
+    id: int
     sources: list[str]

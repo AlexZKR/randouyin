@@ -56,7 +56,10 @@ class PlaywrightScraper(BaseScraper):
 
     async def get_video(self, id: int) -> str:
         page = await self.browser.new_page()
-        await page.goto(get_settings().scraping.DOUYIN_VIDEO_URL.format(id=id))
+        await page.goto(
+            get_settings().scraping.DOUYIN_VIDEO_URL.format(id=id), wait_until="commit"
+        )
+        await page.wait_for_selector(get_settings().scraping.SINGLE_VIDEO_TAG)
         item = page.locator(get_settings().scraping.SINGLE_VIDEO_TAG)
         video_tag: str = await item.evaluate("el => el.outerHTML")
         await page.close()

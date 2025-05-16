@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from randouyin.domain.video import ParsedVideo, SourcedVideo
+from randouyin.domain.video import ParsedVideo
 
 
 class BaseParser(ABC):
@@ -19,16 +19,13 @@ class BaseParser(ABC):
         ...
 
     @abstractmethod
-    def parse_single_video_tag(
-        self, parsed_video: ParsedVideo, tag_html: str
-    ) -> SourcedVideo:
-        """Populate model with links for downloading the video
+    def parse_single_video_tag(self, tag_html: str) -> list[str]:
+        """Get links for downloading the video
 
         Args:
-            parsed_video (ParsedVideo): basic video model, parsed from search card
             tag_html (str): video tag, parsed from single video page
 
         Returns:
-            SourcedVideo: `ParsedVideo` model, populated with list of sources for download
+            list (str): List of video download sources
         """
         ...

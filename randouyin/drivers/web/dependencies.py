@@ -14,5 +14,9 @@ def parser() -> BaseParser:
     return BeautifulSoupParser()
 
 
+def client() -> BaseClient:
+    return HttpxClient()
+
+
 def downloader() -> BaseClient:
     return HttpxClient()

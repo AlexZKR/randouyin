@@ -3,7 +3,7 @@ import re
 
 from bs4 import BeautifulSoup
 
-from randouyin.domain.video import ParsedVideo, SourcedVideo
+from randouyin.domain.video import ParsedVideo
 from randouyin.ports.base_parser import BaseParser
 
 
@@ -59,9 +59,7 @@ class BeautifulSoupParser(BaseParser):
 
         return ParsedVideo(**model)
 
-    def parse_single_video_tag(
-        self, parsed_video: ParsedVideo, tag_html: str
-    ) -> SourcedVideo:
+    def parse_single_video_tag(self, tag_html: str) -> list[str]:
         soup = BeautifulSoup(tag_html, "html.parser")
 
         # extract every src from each source child element of video tag
@@ -70,5 +68,4 @@ class BeautifulSoupParser(BaseParser):
             for c in soup.find("video").children
             if "\n" not in c.get_text()
         ]
-        sourced_video = SourcedVideo(**parsed_video.model_dump(), sources=res)
-        return sourced_video
+        return res

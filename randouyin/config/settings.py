@@ -13,7 +13,7 @@ class ScrapingSettings(BaseModel):
     )
     """Used to extract video card containers"""
 
-    SINGLE_VIDEO_TAG: str = "video"
+    SINGLE_VIDEO_TAG: str = "video[autoplay]"
     """Used to get HTML video element of one video"""
 
     # Scraper
