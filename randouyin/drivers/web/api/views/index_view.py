@@ -34,12 +34,12 @@ async def search_videos(
     videos = []
     i = 0
     for h in html_list:
-        logger.info(f"Parsing {i} video")
         # logger.info(f"\n\n{h}\n\n\n")
         if "直播中" in h:  # skip live broadcasts
             continue
         m = parser.parse_video_card(h)
         videos.append(m.model_dump())
+        logger.info(f"Parsing {i} video # {m.id}")
         i += 1
 
     return templates.TemplateResponse(

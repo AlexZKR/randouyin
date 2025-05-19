@@ -1,8 +1,10 @@
 import http
 import json
 import logging
+import random
 import time
 from collections import defaultdict
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from os import path
@@ -187,6 +189,9 @@ class PlaywrightScraper(BaseScraper):
             wait_until="commit",
         )
 
+        # random waiting
+        await search_page.wait_for_timeout(random.randint(1, 2000))
+
         await search_page.wait_for_selector(SEARCH_INPUT)
         await search_page.wait_for_selector(SEARCH_BTN)
 
@@ -199,7 +204,7 @@ class PlaywrightScraper(BaseScraper):
         logger.info("Opened search page")
 
     @asynccontextmanager
-    async def __search(self):
+    async def __search(self) -> AsyncGenerator[SearchPage]:
         """Sitting idle on the search page, until a request comes.
         After search request fullfilled, return back to the search page.
 
@@ -220,12 +225,29 @@ class PlaywrightScraper(BaseScraper):
     async def search_videos(self, query: str) -> list[str]:
         SCROLLING_TIMES = 5
         i = 0
-        results = []
+        results = set()
         async with self.__search() as sp:
             self.overall_start = time.monotonic()
             while True:
                 logger.info(f"Searching for videos, query: {query}")
                 await sp.search_input.fill(query)
+
+                # random mouse movements for simulating user behaviour
+                logger.info("Checking for captcha...")
+                if await self.is_captcha_present(sp.search_page):
+                    # 1) take screenshot
+                    await sp.search_page.screenshot(
+                        path="randouyin/captcha.png", full_page=True
+                    )
+                    # 2) handle: raise, redirect, or bail out
+                    raise Exception(
+                        "CAPTCHA detected – screenshot saved to captcha.png"
+                    )
+
+                await sp.search_page.mouse.move(
+                    random.randint(1, 800), random.randint(1, 600)
+                )
+
                 await sp.search_btn.click()
                 await sp.search_page.wait_for_selector(
                     get_settings().scraping.SEARCH_LIST_CONTAINER_LOCATOR
@@ -233,20 +255,59 @@ class PlaywrightScraper(BaseScraper):
                 items = sp.search_page.locator(
                     get_settings().scraping.SEARCH_LIST_CONTAINER_LOCATOR
                 )
-                html_video_cards: list[str] = await items.evaluate_all(
-                    "nodes => nodes.map(n => n.outerHTML)"
-                )
-                results.extend(html_video_cards)
+                html_video_cards: list[str] = [
+                    card
+                    for card in await items.evaluate_all(
+                        "nodes => nodes.map(n => n.outerHTML)"
+                    )
+                    if card not in results
+                ]
+
+                # random waiting
+                await sp.search_page.wait_for_timeout(random.randint(1, 2000))
+
+                results.update(html_video_cards)
                 logger.info(f"Got {len(html_video_cards)} for iteration {i}")
                 if len(html_video_cards) > 0:
-                    await sp.search_page.mouse.wheel(0, 300)
+                    # await sp.search_page.mouse.wheel(0, 2160)
+                    await items.last.scroll_into_view_if_needed()
                     i += 1
                     if i == SCROLLING_TIMES:
                         logger.info(f"Break after iteration {i}")
                         break
         logger.info(f"Returning {len(results)} videos total")
         self.__log_request_times(operation_name="search_videos_by_query")
-        return results
+        return list(results)
+
+    async def is_captcha_present(self, page: Page) -> bool:
+        """
+        Detect whether a CAPTCHA is blocking interaction.
+        Returns True if a CAPTCHA container or iframe is found.
+        """
+        isCaptcha = False
+        # 1) Look for a known overlay or container by ID or class
+        if await page.query_selector("#captcha_container, .captcha-overlay"):
+            isCaptcha = True
+
+        # 2) Look for reCAPTCHA v2/v3 frames by URL pattern
+        for frame in page.frames:
+            url = frame.url
+            if "google.com/recaptcha" in url or "hcaptcha.com" in url:
+                isCaptcha = True
+
+        # 3) (Optional) Detect common text prompts
+        content = await page.content()
+        if "Please verify you are a human" in content:
+            isCaptcha = True
+
+        if isCaptcha:
+            if sel := await page.wait_for_selector(
+                "div#captcha_container", timeout=20000
+            ):
+                with open("randouyin/captcha.html", "w") as f:
+                    f.write(await sel.text_content())
+            return True
+        return False
 
     async def get_video(self, id: int) -> str:
         page = await self._browser.new_page()
