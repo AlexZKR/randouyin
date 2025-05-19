@@ -26,23 +26,22 @@ async def search_videos(
     scraper: BaseScraper = Depends(scraper),
     parser: BaseParser = Depends(parser),
 ):
-    async with scraper as s:
-        logger.info("Searching for videos")
-        html_list = await s.search_videos(query)
-        logger.info(f"Found {len(html_list)} videos")
-        # videos = [parser.parse_video_card(html).model_dump() for html in html_list]
+    logger.info("Searching for videos")
+    html_list = await scraper.search_videos(query)
+    logger.info(f"Found {len(html_list)} videos")
+    # videos = [parser.parse_video_card(html).model_dump() for html in html_list]
 
-        videos = []
-        i = 0
-        for h in html_list:
-            logger.info(f"Parsing {i} video")
-            # logger.info(f"\n\n{h}\n\n\n")
-            if "直播中" in h:  # skip live broadcasts
-                continue
-            m = parser.parse_video_card(h)
-            videos.append(m.model_dump())
-            i += 1
+    videos = []
+    i = 0
+    for h in html_list:
+        logger.info(f"Parsing {i} video")
+        # logger.info(f"\n\n{h}\n\n\n")
+        if "直播中" in h:  # skip live broadcasts
+            continue
+        m = parser.parse_video_card(h)
+        videos.append(m.model_dump())
+        i += 1
 
-        return templates.TemplateResponse(
-            "index.html", {"request": request, "query": query, "videos": videos}
-        )
+    return templates.TemplateResponse(
+        "index.html", {"request": request, "query": query, "videos": videos}
+    )
