@@ -1,19 +1,29 @@
 import json
 import logging
-from collections.abc import Generator
+from collections.abc import AsyncGenerator, Generator
 from typing import Any
 
 import pytest
 import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
 from randouyin.adapters.beautiful_soup_parser import BeautifulSoupParser
 from randouyin.adapters.httpx_client import HttpxClient
 from randouyin.adapters.playwright_scraper import PlaywrightScraper
 from randouyin.config.settings import get_settings
+from randouyin.drivers.web.main import app
 from randouyin.ports.base_client import BaseClient
 from randouyin.ports.base_parser import BaseParser
 from randouyin.ports.base_scraper import BaseScraper
 
 logger = logging.getLogger("test")
+
+
+@pytest_asyncio.fixture
+async def async_client() -> AsyncGenerator[AsyncClient]:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver"
+    ) as ac:
+        yield ac
 
 
 @pytest_asyncio.fixture
