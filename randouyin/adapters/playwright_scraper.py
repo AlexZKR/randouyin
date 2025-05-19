@@ -218,6 +218,9 @@ class PlaywrightScraper(BaseScraper):
         await self.search_page.search_page.go_back()
 
     async def search_videos(self, query: str) -> list[str]:
+        SCROLLING_TIMES = 5
+        i = 0
+        results = []
         async with self.__search() as sp:
             self.overall_start = time.monotonic()
             while True:
@@ -233,12 +236,17 @@ class PlaywrightScraper(BaseScraper):
                 html_video_cards: list[str] = await items.evaluate_all(
                     "nodes => nodes.map(n => n.outerHTML)"
                 )
-
+                results.extend(html_video_cards)
+                logger.info(f"Got {len(html_video_cards)} for iteration {i}")
                 if len(html_video_cards) > 0:
-                    break
-
+                    await sp.search_page.mouse.wheel(0, 300)
+                    i += 1
+                    if i == SCROLLING_TIMES:
+                        logger.info(f"Break after iteration {i}")
+                        break
+        logger.info(f"Returning {len(results)} videos total")
         self.__log_request_times(operation_name="search_videos_by_query")
-        return html_video_cards
+        return results
 
     async def get_video(self, id: int) -> str:
         page = await self._browser.new_page()
