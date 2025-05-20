@@ -8,7 +8,7 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from randouyin.adapters.beautiful_soup_parser import BeautifulSoupParser
 from randouyin.adapters.httpx_client import HttpxClient
-from randouyin.adapters.playwright_scraper import PlaywrightScraper
+from randouyin.adapters.scraper.playwright_scraper import PlaywrightScraper
 from randouyin.config.settings import get_settings
 from randouyin.drivers.web.main import app
 from randouyin.ports.base_client import BaseClient

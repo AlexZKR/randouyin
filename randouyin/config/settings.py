@@ -16,6 +16,12 @@ class ScrapingSettings(BaseModel):
     SINGLE_VIDEO_TAG: str = "video"
     """Used to get HTML video element of one video"""
 
+    SEARCH_PAGE_SEARCH_BTN_LOCATOR: str = 'button[data-e2e="searchbar-button"]'
+    """Button that submits search input for video search"""
+
+    SEARCH_PAGE_SEARCH_INTPUT_LOCATOR: str = 'input[data-e2e="searchbar-input"]'
+    """Text field for search query"""
+
     # Scraper
     USE_HEADLESS_BROWSER: bool = True
     """Use headless (without UI) or not (with UI) browser for playwright scraping"""
@@ -23,8 +29,11 @@ class ScrapingSettings(BaseModel):
     SEARCH_PAGE_LOADING_TIMEOUT: float = 50000
     """Page takes some time to load and display the content"""
 
-    COOKIE_PATH: str = "randouyin/config/cookies.json"
-    """Doyuin cookies"""
+    COOKIE_FOLDER: str = "randouyin/config/"
+    """Folder for storing Doyuin cookies"""
+
+    COOKIE_FILENAME: str = "cookies.json"
+    """Filename for Doyuin cookies"""
 
     # URLs
     DOUYIN_SEARCH_URL: str = "https://www.douyin.com/search/{query}"
