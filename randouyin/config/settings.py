@@ -23,6 +23,9 @@ class ScrapingSettings(BaseModel):
     SEARCH_PAGE_LOADING_TIMEOUT: float = 50000
     """Page takes some time to load and display the content"""
 
+    COOKIE_PATH: str = "randouyin/config/cookies.json"
+    """Doyuin cookies"""
+
     # URLs
     DOUYIN_SEARCH_URL: str = "https://www.douyin.com/search/{query}"
     """Douyin search URL"""

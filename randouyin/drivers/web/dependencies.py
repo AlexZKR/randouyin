@@ -1,13 +1,18 @@
+import os
 from contextlib import asynccontextmanager
+from logging import getLogger
 
 from fastapi import FastAPI, HTTPException, Request, status
 
 from randouyin.adapters.beautiful_soup_parser import BeautifulSoupParser
 from randouyin.adapters.httpx_client import HttpxClient
 from randouyin.adapters.playwright_scraper import PlaywrightScraper
+from randouyin.config.settings import get_settings
 from randouyin.ports.base_client import BaseClient
 from randouyin.ports.base_parser import BaseParser
 from randouyin.ports.base_scraper import BaseScraper
+
+logger = getLogger("fastapi")
 
 pw_scraper: PlaywrightScraper | None = None
 
@@ -26,6 +31,12 @@ async def scraper(request: Request) -> BaseScraper:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize Playwright scraper before the app starts"""
+
+    # delete cookies
+    if os.path.exists(get_settings().scraping.COOKIE_PATH):
+        logger.info("Deleting old cookies")
+        os.remove(get_settings().scraping.COOKIE_PATH)
+
     async with PlaywrightScraper() as pw:
         app.state.pw_scraper = pw
         yield

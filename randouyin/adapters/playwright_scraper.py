@@ -9,16 +9,19 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from os import path
 
+import playwright
+import playwright.async_api
 from fastapi import HTTPException
 from playwright.async_api import Locator, Page, async_playwright
 from playwright_stealth import Stealth
 
+from randouyin.adapters.beautiful_soup_parser import BeautifulSoupParser
 from randouyin.config.settings import get_settings
 from randouyin.ports.base_scraper import BaseScraper
 
 logger = logging.getLogger("playwright")
 
-COOKIE_PATH = "randouyin/config/cookies.json"
+
 SEARCH_INPUT = 'input[data-e2e="searchbar-input"]'
 SEARCH_BTN = 'button[data-e2e="searchbar-button"]'
 
@@ -54,9 +57,6 @@ class PlaywrightScraper(BaseScraper):
         self.context.on(
             "request", lambda r: self.request_starts.setdefault(r.url, time.monotonic())
         )
-        # self.context.on(
-        #     "request", lambda r: setattr(self, "overall_start", time.monotonic())
-        # )
 
         async def on_request_done(request_or_response):
             url = request_or_response.url
@@ -69,8 +69,8 @@ class PlaywrightScraper(BaseScraper):
         self.context.on("requestfailed", on_request_done)
 
         # loading cookies
-        if path.exists(COOKIE_PATH):
-            with open(COOKIE_PATH) as f:
+        if path.exists(get_settings().scraping.COOKIE_PATH):
+            with open(get_settings().scraping.COOKIE_PATH) as f:
                 self.cookies = json.load(f)
             logger.info(f"Loaded cookies:\n{self.cookies}")
             await self.context.add_cookies(self.cookies)
@@ -108,6 +108,12 @@ class PlaywrightScraper(BaseScraper):
         )
         await self.context.route("**/*.{png,jpg,jpeg}", lambda route: route.abort())
         await self.context.route("**/*ad*.js", lambda r: r.abort())
+        # Block any font file by extension
+        await self.context.route("**/*.woff2", lambda r: r.abort())
+        await self.context.route("**/*.ttf", lambda r: r.abort())
+
+        # Block CSS via glob
+        await self.context.route("**/*.css", lambda r: r.abort())
         await self.context.route(
             "**/*",
             lambda route: route.abort()
@@ -160,15 +166,6 @@ class PlaywrightScraper(BaseScraper):
     async def __aexit__(self, exc_type, exc, tb):
         logger.info("Tearing down headless browser")
 
-        # extracting cookies
-        all_cookies = await self.context.cookies()
-        if self.cookies != all_cookies:
-            logger.info(f"Saving cookies:\n{all_cookies}")
-            with open(COOKIE_PATH, "w") as f:
-                f.write(json.dumps(all_cookies))
-        else:
-            logger.info("Cookies didn't change!")
-
         await self.context.close()
         await self._browser.close()
         await self._playwright.stop()
@@ -181,27 +178,41 @@ class PlaywrightScraper(BaseScraper):
 
     async def __open_search_page(self):
         """Open search page after initialization"""
-        logger.info("Opening search page")
-        search_page = await self.context.new_page()
-        await search_page.set_viewport_size({"width": 3840, "height": 2160})
-        await search_page.goto(
-            get_settings().scraping.DOUYIN_SEARCH_URL,
-            wait_until="commit",
-        )
+        try:
+            logger.info("Opening search page")
+            search_page = await self.context.new_page()
+            await search_page.set_viewport_size({"width": 3840, "height": 2160})
+            await search_page.goto(
+                get_settings().scraping.DOUYIN_SEARCH_URL,
+                wait_until="commit",
+            )
 
-        # random waiting
-        await search_page.wait_for_timeout(random.randint(1, 2000))
+            # random waiting
+            # await search_page.wait_for_timeout(random.randint(1, 2000))
 
-        await search_page.wait_for_selector(SEARCH_INPUT)
-        await search_page.wait_for_selector(SEARCH_BTN)
+            await search_page.wait_for_selector(SEARCH_INPUT)
+            await search_page.wait_for_selector(SEARCH_BTN)
 
-        self.search_page = self.SearchPage(
-            search_input=search_page.locator(SEARCH_INPUT),
-            search_btn=search_page.locator(SEARCH_BTN),
-            search_page=search_page,
-        )
-        self.__log_request_times(operation_name="open_search_page")
-        logger.info("Opened search page")
+            self.search_page = self.SearchPage(
+                search_input=search_page.locator(SEARCH_INPUT),
+                search_btn=search_page.locator(SEARCH_BTN),
+                search_page=search_page,
+            )
+            self.__log_request_times(operation_name="open_search_page")
+            logger.info("Opened search page")
+        except Exception as e:
+            await self.handle_crash(e, self.search_page.search_page)
+
+        # extracting cookies
+        all_cookies = await self.context.cookies()
+        if self.cookies != all_cookies and path.exists(
+            path.dirname(get_settings().scraping.COOKIE_PATH)
+        ):
+            logger.info(f"Saving cookies:\n{all_cookies}")
+            with open(get_settings().scraping.COOKIE_PATH, "w") as f:
+                f.write(json.dumps(all_cookies))
+        else:
+            logger.info("Cookies didn't change!")
 
     @asynccontextmanager
     async def __search(self) -> AsyncGenerator[SearchPage]:
@@ -222,62 +233,124 @@ class PlaywrightScraper(BaseScraper):
         logger.info("Returning to the search page")
         await self.search_page.search_page.go_back()
 
-    async def search_videos(self, query: str) -> list[str]:
-        SCROLLING_TIMES = 5
+    async def search_videos(self, query: str) -> list[str]:  # noqa: PLR0915
+        SCROLLING_TIMES = 3
+        EMPTY_RESULTS_THRESHOLD = 5
         i = 0
-        results = set()
+        empty_results_counter = 0
+        results = []
+        ids = set()
         async with self.__search() as sp:
-            self.overall_start = time.monotonic()
-            while True:
+            try:
+                self.overall_start = time.monotonic()
                 logger.info(f"Searching for videos, query: {query}")
+
                 await sp.search_input.fill(query)
-
-                # random mouse movements for simulating user behaviour
-                logger.info("Checking for captcha...")
-                if await self.is_captcha_present(sp.search_page):
-                    # 1) take screenshot
-                    await sp.search_page.screenshot(
-                        path="randouyin/captcha.png", full_page=True
-                    )
-                    # 2) handle: raise, redirect, or bail out
-                    raise Exception(
-                        "CAPTCHA detected – screenshot saved to captcha.png"
-                    )
-
-                await sp.search_page.mouse.move(
-                    random.randint(1, 800), random.randint(1, 600)
-                )
-
                 await sp.search_btn.click()
                 await sp.search_page.wait_for_selector(
                     get_settings().scraping.SEARCH_LIST_CONTAINER_LOCATOR
                 )
-                items = sp.search_page.locator(
-                    get_settings().scraping.SEARCH_LIST_CONTAINER_LOCATOR
-                )
-                html_video_cards: list[str] = [
-                    card
-                    for card in await items.evaluate_all(
-                        "nodes => nodes.map(n => n.outerHTML)"
+                while True:
+                    await sp.search_page.wait_for_timeout(random.randint(1, 1000))
+                    items = sp.search_page.locator(
+                        get_settings().scraping.SEARCH_LIST_CONTAINER_LOCATOR
                     )
-                    if card not in results
-                ]
 
-                # random waiting
-                await sp.search_page.wait_for_timeout(random.randint(1, 2000))
+                    # CAPTCHA CHECK
+                    logger.info("Checking for CAPTCHA...")
+                    if await self.is_captcha_present(sp.search_page):
+                        # 1) take screenshot
+                        await sp.search_page.screenshot(
+                            path="randouyin/captcha.png", full_page=True
+                        )
+                        # 2) handle: raise, redirect, or bail out
+                        raise Exception(
+                            "CAPTCHA detected – screenshot saved to captcha.png"
+                        )
+                    logger.info("No CAPTCHA")
+                    await sp.search_page.mouse.move(
+                        random.randint(1, 800), random.randint(1, 600)
+                    )
 
-                results.update(html_video_cards)
-                logger.info(f"Got {len(html_video_cards)} for iteration {i}")
-                if len(html_video_cards) > 0:
-                    # await sp.search_page.mouse.wheel(0, 2160)
-                    await items.last.scroll_into_view_if_needed()
-                    i += 1
-                    if i == SCROLLING_TIMES:
-                        logger.info(f"Break after iteration {i}")
+                    # POPUP HANDLING
+
+                    # 1. sign in to continue
+                    # please sign in pop up text - 请登录后继续使用
+                    # cancel - 取消
+                    # sure - 确定
+
+                    popup_locator = sp.search_page.get_by_text(
+                        "请登录后继续使用", exact=False
+                    )
+
+                    async def dismiss_login_popup():
+                        # Log for visibility
+                        logger.info("Detected sign-in popup—clicking '取消'")
+                        cancel_locator = sp.search_page.get_by_text("取消", exact=False)
+                        await cancel_locator.click()
+
+                    # Register the handler; opt out of waiting for the overlay to vanish
+                    await sp.search_page.add_locator_handler(
+                        popup_locator, handler=dismiss_login_popup, no_wait_after=True
+                    )
+
+                    html_video_cards: list[str] = [
+                        card
+                        for card in await items.evaluate_all(
+                            "nodes => nodes.map(n => n.outerHTML)"
+                        )
+                        if BeautifulSoupParser().parse_id(card) not in ids
+                    ]
+                    for card in html_video_cards:
+                        ids.add(BeautifulSoupParser().parse_id(card))
+
+                    # random waiting
+                    await sp.search_page.wait_for_timeout(random.randint(1, 2000))
+
+                    results.extend(html_video_cards)
+                    logger.info(
+                        f"Got {len(html_video_cards)} for iteration {i}, total: {len(ids)}"
+                    )
+                    if len(html_video_cards) > 0:
+                        # await items.last.scroll_into_view_if_needed()
+                        await sp.search_page.keyboard.press("End")
+                        i += 1
+                        if i == SCROLLING_TIMES:
+                            logger.info(f"Break after iteration {i}")
+                            break
+                    elif empty_results_counter > EMPTY_RESULTS_THRESHOLD:
+                        logger.info(
+                            "Empty results threshold exceeded! Returning results"
+                        )
                         break
-        logger.info(f"Returning {len(results)} videos total")
-        self.__log_request_times(operation_name="search_videos_by_query")
-        return list(results)
+                    else:
+                        empty_results_counter += 1
+
+                logger.info(f"Returning {len(results)} videos total")
+                self.__log_request_times(operation_name="search_videos_by_query")
+                return list(results)
+            except playwright.async_api.TimeoutError as e:
+                await self.handle_crash(e, sp.search_page)
+                # if timeout happend and some videos were scraped - return them
+                if len(results) > 0:
+                    return list(results)
+                else:
+                    return []
+            except Exception as e:
+                # take screenshot of crash and save HTML
+                await self.handle_crash(e, sp.search_page)
+                raise e
+
+    async def handle_crash(self, e: Exception, page: Page):
+        # Playwright’s error message tells us a blocking element’s selector
+
+        await page.screenshot(path="randouyin/crash.png")
+        html = await page.text_content("body")
+        # Save HTML to file
+        with open("randouyin/crash.html", "w", encoding="utf-8") as f:
+            f.write(html)
+        # Re-raise so your crash logic still triggers
+        raise e
 
     async def is_captcha_present(self, page: Page) -> bool:
         """

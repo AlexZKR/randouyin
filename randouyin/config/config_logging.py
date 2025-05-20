@@ -37,6 +37,16 @@ def setup_logging(log_level: str):
                 "handlers": ["console"],
                 "propagate": False,
             },
+            "bs4_parser": {
+                "level": log_level,
+                "handlers": ["console"],
+                "propagate": False,
+            },
+            "fastapi": {
+                "level": log_level,
+                "handlers": ["console"],
+                "propagate": False,
+            },
         },
         "root": {
             "level": log_level,
