@@ -54,37 +54,50 @@ class RequestTimeLogger:
 
     def log_durations(self) -> None:
         """Sorts request durations and outputs to logger"""
-        sorted_success_requests = sorted(
+        SLOWNESS_THRESHOLD_MS = 1000
+
+        def format_top_requests(requests, threshold, max_items=10):
+            lines = [
+                f"   {duration:.2f}s — {url}"
+                for url, duration in requests[:max_items]
+                if duration > threshold
+            ]
+            return "\n".join(lines) if lines else None
+
+        sorted_success = sorted(
             self.success_request_durations.items(), key=lambda kv: kv[1], reverse=True
         )
-        sorted_failed_requests = sorted(
+        sorted_failed = sorted(
             self.failed_request_durations.items(), key=lambda kv: kv[1], reverse=True
         )
-        total_time_str = (
+
+        total_time = (
             f"Total operation {self.operation_name} time: {self.total_seconds:.2f}s"
         )
-        ten_slowest_successful_heading = "Top 10 slowest requests (note: requests are made in parallel, so durations can't be sumed up to get total duration):"
+        slowest_heading = "Top 10 slowest requests (note: requests are made in parallel, so durations can't be summed up to get total duration): "
 
-        success_slowest_durations_str = ""
-        for url, dur in sorted_success_requests[:10]:
-            success_slowest_durations_str += f"   {dur:.3f}s — {url}\n"
+        slow_success = format_top_requests(sorted_success, SLOWNESS_THRESHOLD_MS)
+        slow_failed = format_top_requests(sorted_failed, SLOWNESS_THRESHOLD_MS)
 
-        failed_requests_heading = "Failed requests:"
-        failed_durations = ""
-        for url, dur in sorted_failed_requests[:10]:
-            failed_durations += f"   {dur:.3f}s — {url}\n"
+        if not slow_success:
+            slow_success = (
+                f"No requests, slower than {SLOWNESS_THRESHOLD_MS / 1000} sec."
+            )
+        else:
+            slow_success = "\n" + slow_success
 
-        # saving for error stack
+        if not slow_failed:
+            slow_failed = "No failed requests!"
+        else:
+            slow_failed = "\n" + slow_failed
+
+        failed_heading = "Failed requests: "
+
+        # Compose log message
         self.requests_log_msg = (
-            total_time_str
-            + "\n\n"
-            + ten_slowest_successful_heading
-            + "\n"
-            + success_slowest_durations_str
-            + "\n"
-            + failed_requests_heading
-            + "\n"
-            + failed_durations
+            f"{total_time}\n\n"
+            f"{slowest_heading}{slow_success}\n\n"
+            f"{failed_heading}\n{slow_failed}\n"
         )
         logger.info(self.requests_log_msg)
 
