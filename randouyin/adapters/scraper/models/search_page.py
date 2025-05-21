@@ -6,7 +6,11 @@ from typing import Self
 
 from fastapi import HTTPException, status
 from playwright.async_api import BrowserContext, Page
-from randouyin.adapters.scraper.utils.sign_in_popup import handle_sign_in_popup
+
+from randouyin.adapters.scraper.utils.popup_handlers import (
+    handle_captcha_popup,
+    handle_sign_in_popup,
+)
 from randouyin.config.settings import get_settings
 
 logger = logging.getLogger("playwright")
@@ -46,6 +50,7 @@ class SearchPage:
 
         # Handle popups
         await handle_sign_in_popup(self.search_page)
+        await handle_captcha_popup(self.search_page)
 
         logger.info("Opened search page")
         return self

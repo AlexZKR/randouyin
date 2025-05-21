@@ -66,18 +66,6 @@ class PlaywrightScraper(BaseScraper):
                     get_settings().scraping.SEARCH_LIST_CONTAINER_LOCATOR
                 )
 
-                # # CAPTCHA CHECK
-                # logger.info("Checking for CAPTCHA...")
-                # if await self.is_captcha_present(sp.search_page):
-                #     # 1) take screenshot
-                #     await sp.search_page.screenshot(
-                #         path="randouyin/captcha.png", full_page=True
-                #     )
-                #     # 2) handle: raise, redirect, or bail out
-                #     raise Exception(
-                #         "CAPTCHA detected – screenshot saved to captcha.png"
-                #     )
-                # logger.info("No CAPTCHA")
                 await search_page.mouse.move(
                     random.randint(1, 800), random.randint(1, 600)
                 )
@@ -134,36 +122,6 @@ class PlaywrightScraper(BaseScraper):
         html = await page.text_content("body")
         with open("randouyin/crash.html", "w", encoding="utf-8") as f:
             f.write(html)
-
-    async def is_captcha_present(self, page: Page) -> bool:
-        """
-        Detect whether a CAPTCHA is blocking interaction.
-        Returns True if a CAPTCHA container or iframe is found.
-        """
-        isCaptcha = False
-        # 1) Look for a known overlay or container by ID or class
-        if await page.query_selector("#captcha_container, .captcha-overlay"):
-            isCaptcha = True
-
-        # 2) Look for reCAPTCHA v2/v3 frames by URL pattern
-        for frame in page.frames:
-            url = frame.url
-            if "google.com/recaptcha" in url or "hcaptcha.com" in url:
-                isCaptcha = True
-
-        # 3) (Optional) Detect common text prompts
-        content = await page.content()
-        if "Please verify you are a human" in content:
-            isCaptcha = True
-
-        if isCaptcha:
-            if sel := await page.wait_for_selector(
-                "div#captcha_container", timeout=20000
-            ):
-                with open("randouyin/captcha.html", "w") as f:
-                    f.write(await sel.text_content())
-            return True
-        return False
 
     async def get_video(self, id: int) -> str:
         page = await self.context.new_page()
