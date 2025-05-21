@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
+from fastapi.testclient import TestClient
 from randouyin.adapters.beautiful_soup_parser import BeautifulSoupParser
 from randouyin.adapters.httpx_client import HttpxClient
 from randouyin.adapters.scraper.playwright_scraper import PlaywrightScraper
@@ -19,11 +19,13 @@ logger = logging.getLogger("test")
 
 
 @pytest_asyncio.fixture
-async def async_client() -> AsyncGenerator[AsyncClient]:
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://testserver"
-    ) as ac:
-        yield ac
+async def async_client() -> AsyncGenerator[TestClient]:
+    with TestClient(app) as client:
+        # async with AsyncClient(
+        #     transport=ASGITransport(app=app), base_url="http://testserver"
+        # ) as ac:
+        #     yield ac
+        yield client
 
 
 @pytest_asyncio.fixture

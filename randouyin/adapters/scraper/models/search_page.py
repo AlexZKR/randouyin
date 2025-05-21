@@ -11,6 +11,7 @@ from randouyin.adapters.scraper.utils.popup_handlers import (
     handle_captcha_popup,
     handle_sign_in_popup,
 )
+from randouyin.adapters.scraper.utils.request_logger_decorator import RequestTimeLogger
 from randouyin.config.settings import get_settings
 
 logger = logging.getLogger("playwright")
@@ -19,20 +20,25 @@ logger = logging.getLogger("playwright")
 class SearchPage:
     """Object with locators for `douyin.com/search/` page"""
 
-    def __init__(self) -> None:
+    def __init__(self, context: BrowserContext, logger: RequestTimeLogger) -> None:
         self._input_loc = get_settings().scraping.SEARCH_PAGE_SEARCH_INTPUT_LOCATOR
         self._btn_loc = get_settings().scraping.SEARCH_PAGE_SEARCH_BTN_LOCATOR
         self._search_results_container_loc = (
             get_settings().scraping.SEARCH_LIST_CONTAINER_LOCATOR
         )
 
-    # TODO: log request times
-    # self.__log_request_times(operation_name="open_search_page")
-    async def open_search_page(self, context: BrowserContext) -> Self:
+        self.context = context
+
+        # Setup request logging
+        self.__setup_request_logging(logger)
+
+    async def open_search_page(
+        self,
+    ) -> Self:
         logger.info("Opening search page")
 
         # Setup page and wait for URL opening
-        self.search_page = await context.new_page()
+        self.search_page = await self.context.new_page()
         await self.search_page.set_viewport_size({"width": 3840, "height": 2160})
         await self.search_page.goto(
             get_settings().scraping.DOUYIN_SEARCH_URL,
@@ -79,3 +85,10 @@ class SearchPage:
             # Wait for results to load
             await self.search_page.wait_for_selector(self._search_results_container_loc)
             return self.search_page
+
+    def __setup_request_logging(self, logger: RequestTimeLogger) -> None:
+        """Setup logging of requests made during scraping operations"""
+        # decorator logging of open_search_page
+        original = self.__class__.open_search_page
+        decorated = logger(original).__get__(self, self.__class__)
+        self.open_search_page = decorated  # type: ignore[method-assign]

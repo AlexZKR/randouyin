@@ -1,5 +1,6 @@
 import logging
 import random
+from typing import Self
 
 import playwright
 import playwright.async_api
@@ -15,33 +16,18 @@ logger = logging.getLogger("playwright")
 
 
 class PlaywrightScraper(BaseScraper):
-    # # TODO: turn into decorator func!
-    # def __log_request_times(self, operation_name: str):
-    #     overall_end = time.monotonic()
-    #     total_seconds = overall_end - self.overall_start  # type: ignore
-
-    #     # Sort URLs by duration, descending
-    #     sorted_requests = sorted(
-    #         self.durations.items(), key=lambda kv: kv[1], reverse=True
-    #     )
-
-    #     # Log the slowest 10 requests
-    #     logger.info(f"Total operation {operation_name} time: {total_seconds:.2f}s")
-    #     logger.info(f"Top 10 slowest requests for {operation_name}:")
-    #     for url, dur in sorted_requests[:10]:
-    #         logger.info(f"   {dur:.3f}s — {url}")
-
-    #     # clear requests log for new requests
-    #     self.durations.clear()
-    #     self.request_starts.clear()
-
-    async def __aenter__(self):
+    async def __aenter__(self) -> Self:
         self._pw_manager = PWManager()
-        await self._pw_manager.start_pw()
 
+        await self._pw_manager.start_pw()
         self.context = await self._pw_manager.get_context()
 
-        self.search_page = await SearchPage().open_search_page(self.context)
+        self.__setup_request_logging()
+
+        self.search_page = await SearchPage(
+            self.context, self._pw_manager.request_logger
+        ).open_search_page()
+
         await self._pw_manager.cookie_manager.save_to_file(self.context)
 
         return self
@@ -59,7 +45,6 @@ class PlaywrightScraper(BaseScraper):
 
         search_page = await self.search_page.perform_search(query)
         try:
-            # self.overall_start = time.monotonic()
             while True:
                 await search_page.wait_for_timeout(random.randint(1, 1000))
                 items = search_page.locator(
@@ -101,7 +86,6 @@ class PlaywrightScraper(BaseScraper):
                     empty_results_counter += 1
 
                 logger.info(f"Returning {len(results)} videos total")
-                # self.__log_request_times(operation_name="search_videos_by_query")
             return list(results)
         except playwright.async_api.TimeoutError:
             await self.handle_crash(search_page)
@@ -121,7 +105,7 @@ class PlaywrightScraper(BaseScraper):
 
         html = await page.text_content("body")
         with open("randouyin/crash.html", "w", encoding="utf-8") as f:
-            f.write(html)
+            f.write(html)  # type: ignore
 
     async def get_video(self, id: int) -> str:
         page = await self.context.new_page()
@@ -132,9 +116,22 @@ class PlaywrightScraper(BaseScraper):
             get_settings().scraping.SINGLE_VIDEO_TAG, state="attached"
         )
         item = page.locator(get_settings().scraping.SINGLE_VIDEO_TAG).first
-        # await item.wait_for(state="attached", timeout=15000)
 
         video_tag: str = await item.evaluate("el => el.outerHTML")
         logger.info(video_tag)
         await page.close()
         return video_tag
+
+    def __setup_request_logging(self) -> None:
+        """Setup logging of requests made during scraping operations"""
+        logger = self._pw_manager.request_logger
+
+        # decorator logging of search_videos
+        original = self.__class__.search_videos  # type: ignore[assignment]
+        decorated = logger(original).__get__(self, self.__class__)
+        self.search_videos = decorated  # type: ignore[method-assign]
+
+        # decorator logging of get_video
+        original = self.__class__.get_video  # type: ignore[assignment]
+        decorated = logger(original).__get__(self, self.__class__)
+        self.get_video = decorated  # type: ignore[method-assign]
