@@ -7,6 +7,10 @@ from randouyin.config.config_logging import setup_logging
 
 
 class ScrapingSettings(BaseModel):
+    # Logging
+    SLOWNESS_THRESHOLD_MS: float = 100
+    """Request time logger uses this value to identify slow requests"""
+
     # Page locators
     SEARCH_LIST_CONTAINER_LOCATOR: str = (
         "div#waterFallScrollContainer div[id^='waterfall_item']"

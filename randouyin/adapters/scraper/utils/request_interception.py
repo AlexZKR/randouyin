@@ -93,8 +93,8 @@ async def fulfill_resource(route):
         await route.fulfill(
             status=200, content_type="application/manifest+json", body="{}"
         )
-    elif resource_type == "other":
-        await route.fulfill(status=200, content_type="text/plain", body="")
+    elif resource_type in ("xhr", "fetch", "script", "document"):
+        await route.continue_()
     else:
         await route.continue_()
 

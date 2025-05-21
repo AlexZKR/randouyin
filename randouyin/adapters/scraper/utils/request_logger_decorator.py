@@ -6,6 +6,8 @@ from collections.abc import Callable
 
 from playwright.async_api import BrowserContext, Request
 
+from randouyin.config.settings import get_settings
+
 logger = logging.getLogger("playwright")
 
 
@@ -54,7 +56,7 @@ class RequestTimeLogger:
 
     def log_durations(self) -> None:
         """Sorts request durations and outputs to logger"""
-        SLOWNESS_THRESHOLD_MS = 1000
+        duration_threshold = get_settings().scraping.SLOWNESS_THRESHOLD_MS
 
         def format_top_requests(requests, threshold, max_items=10):
             lines = [
@@ -76,13 +78,11 @@ class RequestTimeLogger:
         )
         slowest_heading = "Top 10 slowest requests (note: requests are made in parallel, so durations can't be summed up to get total duration): "
 
-        slow_success = format_top_requests(sorted_success, SLOWNESS_THRESHOLD_MS)
-        slow_failed = format_top_requests(sorted_failed, SLOWNESS_THRESHOLD_MS)
+        slow_success = format_top_requests(sorted_success, duration_threshold)
+        slow_failed = format_top_requests(sorted_failed, duration_threshold)
 
         if not slow_success:
-            slow_success = (
-                f"No requests, slower than {SLOWNESS_THRESHOLD_MS / 1000} sec."
-            )
+            slow_success = f"No requests, slower than {duration_threshold / 1000} sec."
         else:
             slow_success = "\n" + slow_success
 
