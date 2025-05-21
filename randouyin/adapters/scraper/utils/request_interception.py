@@ -4,50 +4,99 @@ from playwright.async_api import BrowserContext
 
 
 async def set_request_interceptions(context: BrowserContext) -> None:
-    """Intercept optional auxilary requests to Doyuin, like CSS, telemetry, etc.
+    """Intercept optional auxiliary requests to Douyin, like CSS, telemetry, etc.
 
     Args:
         context (BrowserContext): context of the PW browser
     """
-    # Global rules
+    # Security SDKs and telemetry
     await context.route("**/*", stub_security)
+
+    # Specific packages and ad scripts
     await context.route(
-        "**/*",
-        lambda route: route.abort()
-        if route.request.resource_type
-        in {
-            "image",
-            "stylesheet",
-            "font",
-            "media",
-            "texttrack",
-            "eventsource",
-            "websocket",
-            "manifest",
-            "other",
-        }
-        else route.continue_(),
+        "**/collect/5.1/collect.zip.js*",
+        lambda route: route.fulfill(
+            status=200,
+            content_type="application/javascript",
+            body="// blocked collect.zip.js",
+        ),
     )
-
-    # Images, styling, fonts
-    await context.route("**/*.css", lambda r: r.abort())
-    await context.route("**/*.{png,jpg,jpeg}", lambda route: route.abort())
-
-    await context.route("**/*ad*.js", lambda r: r.abort())
-    await context.route("**/*.woff2", lambda r: r.abort())
-    await context.route("**/*.ttf", lambda r: r.abort())
-
-    # Specific packages
-    await context.route("**/collect/5.1/collect.zip.js*", lambda route: route.abort())
     await context.route(
         "**/webmssdk.es5.js",
-        lambda r: r.fulfill(status=200, content_type="application/javascript", body=""),
+        lambda route: route.fulfill(
+            status=200, content_type="application/javascript", body=""
+        ),
     )
     await context.route(
         "**/sdk-glue.js",
-        lambda r: r.fulfill(status=200, content_type="application/javascript", body=""),
+        lambda route: route.fulfill(
+            status=200, content_type="application/javascript", body=""
+        ),
     )
+    await context.route(
+        "**/*ad*.js",
+        lambda route: route.fulfill(
+            status=200,
+            content_type="application/javascript",
+            body="// blocked ad script",
+        ),
+    )
+
+    # Images, styling, fonts
+    await context.route(
+        "**/*.css",
+        lambda route: route.fulfill(
+            status=200, content_type="text/css", body="/* blocked css */"
+        ),
+    )
+    await context.route(
+        "**/*.{png,jpg,jpeg}",
+        lambda route: route.fulfill(status=200, content_type="image/png", body=b""),
+    )
+    await context.route(
+        "**/*.woff2",
+        lambda route: route.fulfill(status=200, content_type="font/woff2", body=b""),
+    )
+    await context.route(
+        "**/*.ttf",
+        lambda route: route.fulfill(status=200, content_type="font/ttf", body=b""),
+    )
+
+    # General fallback for all other resource types
+    await context.route("**/*", fulfill_resource)
+
+    # Remove service worker
     await context.add_init_script("delete navigator.serviceWorker;")
+
+
+async def fulfill_resource(route):
+    resource_type = route.request.resource_type
+    if resource_type == "image":
+        await route.fulfill(status=200, content_type="image/png", body=b"")
+    elif resource_type == "stylesheet":
+        await route.fulfill(
+            status=200, content_type="text/css", body="/* blocked css */"
+        )
+    elif resource_type == "font":
+        await route.fulfill(status=200, content_type="font/woff2", body=b"")
+    elif resource_type == "media":
+        await route.fulfill(status=200, content_type="video/mp4", body=b"")
+    elif resource_type == "texttrack":
+        await route.fulfill(status=200, content_type="text/vtt", body="")
+    elif resource_type == "eventsource":
+        await route.fulfill(status=200, content_type="text/event-stream", body="")
+    elif resource_type == "websocket":
+        await route.fulfill(
+            status=200, content_type="application/octet-stream", body=b""
+        )
+    elif resource_type == "manifest":
+        await route.fulfill(
+            status=200, content_type="application/manifest+json", body="{}"
+        )
+    elif resource_type == "other":
+        await route.fulfill(status=200, content_type="text/plain", body="")
+    else:
+        await route.continue_()
 
 
 async def stub_security(route, request):
