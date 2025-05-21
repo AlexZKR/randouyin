@@ -19,6 +19,7 @@ services:
       - "8000:8000"
     volumes:
       - ./randouyin:/app/randouyin
+      - ./timeout_crashes:/app/timeout_crashes
     networks:
       - randouyin-network
 

@@ -4,7 +4,7 @@ import time
 from collections import defaultdict
 from collections.abc import Callable
 
-from playwright.async_api import BrowserContext, Request, Response
+from playwright.async_api import BrowserContext, Request
 
 logger = logging.getLogger("playwright")
 
@@ -14,10 +14,13 @@ class RequestTimeLogger:
 
     def __init__(self, context: BrowserContext) -> None:
         self.request_start_times: dict[str, float] = {}
-        self.request_durations: dict[str, float] = defaultdict(float)
+
+        self.success_request_durations: dict[str, float] = defaultdict(float)
+        self.failed_request_durations: dict[str, float] = defaultdict(float)
 
         self.total_seconds: float
         self.operation_name: str
+        self.requests_log_msg: str
 
         # Register callbacks
         logger.info("Setting up logger - registering callbacks on context")
@@ -42,7 +45,8 @@ class RequestTimeLogger:
             self.operation_name = func.__name__
             self.log_durations()
 
-            self.request_durations.clear()
+            self.success_request_durations.clear()
+            self.failed_request_durations.clear()
             self.request_start_times.clear()
             return result
 
@@ -50,26 +54,51 @@ class RequestTimeLogger:
 
     def log_durations(self) -> None:
         """Sorts request durations and outputs to logger"""
-        sorted_requests = sorted(
-            self.request_durations.items(), key=lambda kv: kv[1], reverse=True
+        sorted_success_requests = sorted(
+            self.success_request_durations.items(), key=lambda kv: kv[1], reverse=True
         )
-        logger.info(
+        sorted_failed_requests = sorted(
+            self.failed_request_durations.items(), key=lambda kv: kv[1], reverse=True
+        )
+        total_time_str = (
             f"Total operation {self.operation_name} time: {self.total_seconds:.2f}s"
         )
-        logger.info(
-            "Top 10 slowest requests (note: requests are made in parallel, so durations can't be sumed up to get total duration):"
+        ten_slowest_successful_heading = "Top 10 slowest requests (note: requests are made in parallel, so durations can't be sumed up to get total duration):"
+
+        success_slowest_durations_str = ""
+        for url, dur in sorted_success_requests[:10]:
+            success_slowest_durations_str += f"   {dur:.3f}s — {url}\n"
+
+        failed_requests_heading = "Failed requests:"
+        failed_durations = ""
+        for url, dur in sorted_failed_requests[:10]:
+            failed_durations += f"   {dur:.3f}s — {url}\n"
+
+        # saving for error stack
+        self.requests_log_msg = (
+            total_time_str
+            + "\n\n"
+            + ten_slowest_successful_heading
+            + "\n"
+            + success_slowest_durations_str
+            + "\n"
+            + failed_requests_heading
+            + "\n"
+            + failed_durations
         )
-        for url, dur in sorted_requests[:10]:
-            logger.info(f"   {dur:.3f}s — {url}")
+        logger.info(self.requests_log_msg)
 
     def on_request_start(self, r: Request) -> None:
         """Callback that's called when request fires, to record it's start time"""
         self.request_start_times[r.url] = time.monotonic()
 
-    def on_request_finish(self, r: Request | Response):
+    def on_request_finish(self, r: Request):
         """Callback that's called after request has been done, to record it's end time"""
         url = r.url
         start = self.request_start_times.get(url)
+        end = time.monotonic()
         if start:
-            end = time.monotonic()
-            self.request_durations[url] = end - start
+            if r.failure:
+                self.failed_request_durations[f"{r.failure} - {url}"] = end - start
+            else:
+                self.success_request_durations[url] = end - start

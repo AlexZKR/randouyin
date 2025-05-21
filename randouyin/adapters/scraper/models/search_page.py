@@ -5,13 +5,16 @@ from random import randint
 from typing import Self
 
 from fastapi import HTTPException, status
-from playwright.async_api import BrowserContext, Page
+from playwright.async_api import BrowserContext, Page, TimeoutError
 
 from randouyin.adapters.scraper.utils.popup_handlers import (
     handle_captcha_popup,
     handle_sign_in_popup,
 )
 from randouyin.adapters.scraper.utils.request_logger_decorator import RequestTimeLogger
+from randouyin.adapters.scraper.utils.timeout_error_handler import (
+    handle_timeout_crash,
+)
 from randouyin.config.settings import get_settings
 
 logger = logging.getLogger("playwright")
@@ -31,40 +34,52 @@ class SearchPage:
 
         # Setup request logging
         self.__setup_request_logging(logger)
+        self.requests_logger = logger
 
     async def open_search_page(
         self,
     ) -> Self:
         logger.info("Opening search page")
+        try:
+            # Setup page and wait for URL opening
+            self.page = await self.context.new_page()
+            await self.page.set_viewport_size({"width": 3840, "height": 2160})
+            await self.page.goto(
+                get_settings().scraping.DOUYIN_SEARCH_URL,
+                wait_until="commit",
+            )
 
-        # Setup page and wait for URL opening
-        self.search_page = await self.context.new_page()
-        await self.search_page.set_viewport_size({"width": 3840, "height": 2160})
-        await self.search_page.goto(
-            get_settings().scraping.DOUYIN_SEARCH_URL,
-            wait_until="commit",
-        )
+            # Wait for btn and search input loading + random wait
+            await self.page.wait_for_timeout(randint(1, 2000))
+            await self.page.wait_for_selector(self._input_loc)
+            await self.page.wait_for_selector(self._btn_loc)
 
-        # Wait for btn and search input loading + random wait
-        await self.search_page.wait_for_timeout(randint(1, 2000))
-        await self.search_page.wait_for_selector(self._input_loc)
-        await self.search_page.wait_for_selector(self._btn_loc)
+            # setup locators
+            self._search_btn = self.page.locator(self._btn_loc)
+            self._search_input = self.page.locator(self._input_loc)
 
-        # setup locators
-        self._search_btn = self.search_page.locator(self._btn_loc)
-        self._search_input = self.search_page.locator(self._input_loc)
+            # Handle popups
+            await handle_sign_in_popup(self.page)
+            await handle_captcha_popup(self.page)
 
-        # Handle popups
-        await handle_sign_in_popup(self.search_page)
-        await handle_captcha_popup(self.search_page)
+            logger.info("Opened search page")
+            return self
+        except TimeoutError as e:
+            await handle_timeout_crash(
+                page=self.page,
+                e=e,
+                requests_info=self.requests_logger.requests_log_msg,
+                raise_exc=True,
+            )
 
-        logger.info("Opened search page")
-        return self
+            # `handle_timeout_crash` here raises a HTTPException,
+            # but type checker is not happy without `raise e`
+            raise e
 
     @asynccontextmanager
     async def __search(self) -> AsyncGenerator:
         """Go back to search page after searching"""
-        if not self.search_page:
+        if not self.page:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Search page isn't loaded!",
@@ -73,7 +88,7 @@ class SearchPage:
         yield
 
         logger.info("Returning to the search page")
-        await self.search_page.go_back()
+        await self.page.go_back()
 
     async def perform_search(self, query: str) -> Page:
         logger.info(f"Searching for videos, query: {query}")
@@ -83,8 +98,8 @@ class SearchPage:
             await self._search_btn.click()
 
             # Wait for results to load
-            await self.search_page.wait_for_selector(self._search_results_container_loc)
-            return self.search_page
+            await self.page.wait_for_selector(self._search_results_container_loc)
+            return self.page
 
     def __setup_request_logging(self, logger: RequestTimeLogger) -> None:
         """Setup logging of requests made during scraping operations"""

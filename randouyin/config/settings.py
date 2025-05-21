@@ -13,7 +13,7 @@ class ScrapingSettings(BaseModel):
     )
     """Used to extract video card containers"""
 
-    SINGLE_VIDEO_TAG: str = "video"
+    SINGLE_VIDEO_TAG_LOCATOR: str = "video"
     """Used to get HTML video element of one video"""
 
     SEARCH_PAGE_SEARCH_BTN_LOCATOR: str = 'button[data-e2e="searchbar-button"]'
@@ -29,14 +29,18 @@ class ScrapingSettings(BaseModel):
     SEARCH_PAGE_LOADING_TIMEOUT: float = 50000
     """Page takes some time to load and display the content"""
 
+    # Cookies
     COOKIE_FOLDER: str = "randouyin/config/"
     """Folder for storing Doyuin cookies"""
 
     COOKIE_FILENAME: str = "cookies.json"
     """Filename for Doyuin cookies"""
 
+    # Timeout crash folder
+    TIMEOUT_CRASH_FOLDER: str = "timeout_crashes"
+
     # URLs
-    DOUYIN_SEARCH_URL: str = "https://www.douyin.com/search/{query}"
+    DOUYIN_SEARCH_URL: str = "https://www.douyin.com/search/"
     """Douyin search URL"""
 
     DOUYIN_VIDEO_URL: str = "https://www.douyin.com/video/{id}"

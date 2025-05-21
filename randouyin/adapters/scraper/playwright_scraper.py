@@ -2,13 +2,14 @@ import logging
 import random
 from typing import Self
 
-import playwright
-import playwright.async_api
-from playwright.async_api import Page
+from playwright.async_api import TimeoutError
 
 from randouyin.adapters.beautiful_soup_parser import BeautifulSoupParser
 from randouyin.adapters.scraper.models.search_page import SearchPage
 from randouyin.adapters.scraper.utils.playwright_init import PWManager
+from randouyin.adapters.scraper.utils.timeout_error_handler import (
+    handle_timeout_crash,
+)
 from randouyin.config.settings import get_settings
 from randouyin.ports.base_scraper import BaseScraper
 
@@ -42,8 +43,10 @@ class PlaywrightScraper(BaseScraper):
         results = []
         ids = set()
 
-        search_page = await self.search_page.perform_search(query)
         try:
+            # initial search
+            search_page = await self.search_page.perform_search(query)
+            # infinite scrolling
             while True:
                 await search_page.wait_for_timeout(random.randint(1, 1000))
                 items = search_page.locator(
@@ -86,25 +89,20 @@ class PlaywrightScraper(BaseScraper):
 
                 logger.info(f"Returning {len(results)} videos total")
             return list(results)
-        except playwright.async_api.TimeoutError:
-            await self.handle_crash(search_page)
+        except TimeoutError as e:
             # if timeout happend and some videos were scraped - return them
+            timeout_id = await handle_timeout_crash(
+                page=self.search_page.page,
+                e=e,
+                requests_info=self._pw_manager.request_logger.requests_log_msg,
+                raise_exc=False,
+            )
+            logger.error(
+                f"A timeout happened during video search. Search resulted in {len(results)} videos.\ntimeout_id: {timeout_id}"
+            )
             if len(results) > 0:
                 return list(results)
-            else:
-                return []
-        except Exception as e:
-            # take screenshot of crash and save HTML
-            await self.handle_crash(search_page)
-            raise e
-
-    # TODO: MAKE as a decorator
-    async def handle_crash(self, page: Page):
-        await page.screenshot(path="randouyin/crash.png")
-
-        html = await page.text_content("body")
-        with open("randouyin/crash.html", "w", encoding="utf-8") as f:
-            f.write(html)  # type: ignore
+            return []
 
     async def get_video(self, id: int) -> str:
         page = await self.context.new_page()
@@ -112,9 +110,9 @@ class PlaywrightScraper(BaseScraper):
             get_settings().scraping.DOUYIN_VIDEO_URL.format(id=id), wait_until="commit"
         )
         await page.wait_for_selector(
-            get_settings().scraping.SINGLE_VIDEO_TAG, state="attached"
+            get_settings().scraping.SINGLE_VIDEO_TAG_LOCATOR, state="attached"
         )
-        item = page.locator(get_settings().scraping.SINGLE_VIDEO_TAG).first
+        item = page.locator(get_settings().scraping.SINGLE_VIDEO_TAG_LOCATOR).first
 
         video_tag: str = await item.evaluate("el => el.outerHTML")
         logger.info(video_tag)
