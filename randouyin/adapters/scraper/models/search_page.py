@@ -9,6 +9,7 @@ from playwright.async_api import BrowserContext, Page, TimeoutError
 
 from randouyin.adapters.scraper.utils.popup_handlers import (
     handle_captcha_popup,
+    handle_log_in_popup,
     handle_sign_in_popup,
 )
 from randouyin.adapters.scraper.utils.request_logger_decorator import RequestTimeLogger
@@ -61,6 +62,7 @@ class SearchPage:
             # Handle popups
             await handle_sign_in_popup(self.page)
             await handle_captcha_popup(self.page)
+            await handle_log_in_popup(self.page)
 
             logger.info("Opened search page")
             return self

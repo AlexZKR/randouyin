@@ -8,7 +8,36 @@ import logging
 from fastapi import HTTPException, status
 from playwright.async_api import Page
 
+from randouyin.adapters.scraper.utils.antiblock import (
+    random_waiting,
+    simulate_scrolling,
+)
+
 logger = logging.getLogger("playwright")
+
+
+async def handle_log_in_popup(page: Page):
+    """Handle \"Log in to Douyin\" popup
+
+    Popup text: Log in to Douyin
+
+    Args:
+        page (Page): Page where to setup a handler
+    """
+
+    async def popup_handler():
+        logger.info("Detected log in popup: clicking 'X' button")
+        x_button_locator = page.locator(
+            "#login-panel-new article > div > div:nth-child(2)"
+        )
+        await random_waiting()
+        await simulate_scrolling(page)
+        await x_button_locator.click()
+
+    popup_locator = page.get_by_text("Log in to Douyin", exact=False)
+    await page.add_locator_handler(
+        popup_locator, handler=popup_handler, no_wait_after=True
+    )
 
 
 async def handle_sign_in_popup(page: Page):
@@ -25,6 +54,8 @@ async def handle_sign_in_popup(page: Page):
     async def popup_handler():
         logger.info("Detected sign-in popup: clicking '取消'")
         cancel_locator = page.get_by_text("取消", exact=False)
+        await random_waiting()
+        await simulate_scrolling(page)
         await cancel_locator.click()
 
     popup_locator = page.get_by_text("请登录后继续使用", exact=False)
