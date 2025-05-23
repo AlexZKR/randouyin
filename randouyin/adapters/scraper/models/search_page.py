@@ -45,16 +45,14 @@ class SearchPage:
         self.__setup_request_logging(logger)
         self.requests_logger = logger
 
-    async def open_search_page(
-        self,
-    ) -> Self:
+    async def open_search_page(self, query) -> Self:
         logger.info("Opening search page")
         try:
             # Setup page and wait for URL opening
             self.page = await self.context.new_page()
             await self.page.set_viewport_size({"width": 1920, "height": 1080})
             await self.page.goto(
-                get_settings().scraping.DOUYIN_SEARCH_URL,
+                get_settings().scraping.DOUYIN_SEARCH_URL.format(query=query),
                 wait_until="commit",
             )
 
@@ -110,9 +108,16 @@ class SearchPage:
     async def perform_search(self, query: str) -> Page:
         logger.info(f"Searching for videos, query: {query}")
         async with self.__search():
+            # html = await self.page.content()
+            # if html:
+            #     with open(f"randouyin/page.html", "w", encoding="utf-8") as f:
+            #         f.write(html)
+            # await self.page.screenshot(path="randouyin/page.png")
+
             # Input query and press the btn
-            await self._search_input.fill(query)
-            await self._search_btn.click()
+            # await self._search_input.fill(query)
+            # await self.page.wait_for_timeout(randint(1, 100))
+            # await self._search_btn.click()
 
             # Wait for results to load
             await simulate_scrolling(self.page)

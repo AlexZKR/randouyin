@@ -44,7 +44,7 @@ class ScrapingSettings(BaseModel):
     TIMEOUT_CRASH_FOLDER: str = "timeout_crashes"
 
     # URLs
-    DOUYIN_SEARCH_URL: str = "https://www.douyin.com/search/"
+    DOUYIN_SEARCH_URL: str = "https://www.douyin.com/search/{query}"
     """Douyin search URL"""
 
     DOUYIN_VIDEO_URL: str = "https://www.douyin.com/video/{id}"

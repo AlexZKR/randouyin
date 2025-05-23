@@ -29,8 +29,7 @@ class PlaywrightScraper(BaseScraper):
 
         self.__setup_request_logging()
 
-        sp = SearchPage(self.context, self._pw_manager.request_logger)
-        self.search_page = await sp.open_search_page()
+        self.sp = SearchPage(self.context, self._pw_manager.request_logger)
 
         await self._pw_manager.cookie_manager.save_to_file(self.context)
 
@@ -49,7 +48,10 @@ class PlaywrightScraper(BaseScraper):
 
         try:
             # initial search
+            self.search_page = await self.sp.open_search_page(query)
+
             search_page = await self.search_page.perform_search(query)
+
             # infinite scrolling
             while True:
                 await random_waiting()
@@ -90,6 +92,8 @@ class PlaywrightScraper(BaseScraper):
                     empty_results_counter += 1
 
                 logger.info(f"Returning {len(results)} videos total")
+                if len(results) == 0:
+                    raise TimeoutError("Results is 0")
             return list(results)
         except TimeoutError as e:
             # if timeout happend and some videos were scraped - return them
