@@ -1,6 +1,6 @@
 """Script interception utilities for playwright scraper"""
 
-from playwright.async_api import BrowserContext
+from playwright.async_api import BrowserContext, Route
 
 
 async def set_request_interceptions(context: BrowserContext) -> None:
@@ -21,38 +21,7 @@ async def set_request_interceptions(context: BrowserContext) -> None:
             body="// blocked collect.zip.js",
         ),
     )
-    await context.route(
-        "**/webmssdk.es5.js",
-        lambda route: route.fulfill(
-            status=200, content_type="application/javascript", body=""
-        ),
-    )
-    await context.route(
-        "**/sdk-glue.js",
-        lambda route: route.fulfill(
-            status=200, content_type="application/javascript", body=""
-        ),
-    )
-    await context.route(
-        "**/*ad*.js",
-        lambda route: route.fulfill(
-            status=200,
-            content_type="application/javascript",
-            body="// blocked ad script",
-        ),
-    )
 
-    # Images, styling, fonts
-    await context.route(
-        "**/*.css",
-        lambda route: route.fulfill(
-            status=200, content_type="text/css", body="/* blocked css */"
-        ),
-    )
-    await context.route(
-        "**/*.{png,jpg,jpeg}",
-        lambda route: route.fulfill(status=200, content_type="image/png", body=b""),
-    )
     await context.route(
         "**/*.woff2",
         lambda route: route.fulfill(status=200, content_type="font/woff2", body=b""),
@@ -63,15 +32,17 @@ async def set_request_interceptions(context: BrowserContext) -> None:
     )
 
     # General fallback for all other resource types
-    await context.route("**/*", fulfill_resource)
+    # await context.route("**/*", fulfill_resource)
 
     # Remove service worker
     await context.add_init_script("delete navigator.serviceWorker;")
 
 
-async def fulfill_resource(route):
+async def fulfill_resource(route: Route):
     resource_type = route.request.resource_type
-    if resource_type == "image":
+    if resource_type in ("xhr", "fetch", "script", "document"):
+        await route.continue_()
+    elif resource_type == "image":
         await route.fulfill(status=200, content_type="image/png", body=b"")
     elif resource_type == "stylesheet":
         await route.fulfill(
@@ -93,8 +64,6 @@ async def fulfill_resource(route):
         await route.fulfill(
             status=200, content_type="application/manifest+json", body="{}"
         )
-    elif resource_type in ("xhr", "fetch", "script", "document"):
-        await route.continue_()
     else:
         await route.continue_()
 
