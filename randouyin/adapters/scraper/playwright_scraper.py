@@ -1,11 +1,15 @@
 import logging
-import random
 from typing import Self
 
 from playwright.async_api import TimeoutError
 
 from randouyin.adapters.beautiful_soup_parser import BeautifulSoupParser
 from randouyin.adapters.scraper.models.search_page import SearchPage
+from randouyin.adapters.scraper.utils.antiblock import (
+    random_waiting,
+    simulate_human_behavior,
+    simulate_scrolling,
+)
 from randouyin.adapters.scraper.utils.playwright_init import PWManager
 from randouyin.adapters.scraper.utils.timeout_error_handler import (
     handle_timeout_crash,
@@ -48,14 +52,12 @@ class PlaywrightScraper(BaseScraper):
             search_page = await self.search_page.perform_search(query)
             # infinite scrolling
             while True:
-                await search_page.wait_for_timeout(random.randint(1, 1000))
+                await random_waiting()
                 items = search_page.locator(
                     get_settings().scraping.SEARCH_LIST_CONTAINER_LOCATOR
                 )
 
-                await search_page.mouse.move(
-                    random.randint(1, 800), random.randint(1, 600)
-                )
+                await simulate_human_behavior(search_page)
 
                 html_video_cards: list[str] = [
                     card
@@ -68,7 +70,7 @@ class PlaywrightScraper(BaseScraper):
                     ids.add(BeautifulSoupParser().parse_id(card))
 
                     # random waiting
-                await search_page.wait_for_timeout(random.randint(1, 2000))
+                await simulate_scrolling(search_page)
 
                 results.extend(html_video_cards)
                 logger.info(

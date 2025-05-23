@@ -7,6 +7,11 @@ from typing import Self
 from fastapi import HTTPException, status
 from playwright.async_api import BrowserContext, Page, TimeoutError
 
+from randouyin.adapters.scraper.utils.antiblock import (
+    random_waiting,
+    simulate_human_behavior,
+    simulate_scrolling,
+)
 from randouyin.adapters.scraper.utils.dead_end_handlers import (
     handle_log_in_to_view_content_de,
 )
@@ -47,16 +52,20 @@ class SearchPage:
         try:
             # Setup page and wait for URL opening
             self.page = await self.context.new_page()
-            await self.page.set_viewport_size({"width": 3840, "height": 2160})
+            await self.page.set_viewport_size({"width": 1920, "height": 1080})
             await self.page.goto(
                 get_settings().scraping.DOUYIN_SEARCH_URL,
                 wait_until="commit",
             )
 
+            await simulate_scrolling(self.page)
+
             # Wait for btn and search input loading + random wait
             await self.page.wait_for_timeout(randint(1, 2000))
             await self.page.wait_for_selector(self._input_loc)
             await self.page.wait_for_selector(self._btn_loc)
+
+            await simulate_human_behavior(self.page)
 
             # setup locators
             self._search_btn = self.page.locator(self._btn_loc)
@@ -92,9 +101,9 @@ class SearchPage:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Search page isn't loaded!",
             )
-
+        await random_waiting()
         yield
-
+        await simulate_human_behavior(self.page)
         logger.info("Returning to the search page")
         await self.page.go_back()
 
@@ -106,6 +115,9 @@ class SearchPage:
             await self._search_btn.click()
 
             # Wait for results to load
+            await simulate_scrolling(self.page)
+
+            logger.info("Waiting for initial results to load")
             await self.page.wait_for_selector(self._search_results_container_loc)
             return self.page
 
