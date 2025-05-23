@@ -7,6 +7,9 @@ from typing import Self
 from fastapi import HTTPException, status
 from playwright.async_api import BrowserContext, Page, TimeoutError
 
+from randouyin.adapters.scraper.utils.dead_end_handlers import (
+    handle_log_in_to_view_content_de,
+)
 from randouyin.adapters.scraper.utils.popup_handlers import (
     handle_captcha_popup,
     handle_log_in_popup,
@@ -63,6 +66,9 @@ class SearchPage:
             await handle_sign_in_popup(self.page)
             await handle_captcha_popup(self.page)
             await handle_log_in_popup(self.page)
+
+            # handle dead ends
+            await handle_log_in_to_view_content_de(self.page)
 
             logger.info("Opened search page")
             return self
