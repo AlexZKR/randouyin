@@ -47,7 +47,7 @@ async def handle_timeout_crash(
     await page.screenshot(path=f"{wd}/screenshot.png")
 
     # save html
-    html = await page.text_content("body")
+    html = await page.content()
     if html:
         with open(f"{wd}/page.html", "w", encoding="utf-8") as f:
             f.write(html)

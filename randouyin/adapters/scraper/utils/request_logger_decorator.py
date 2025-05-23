@@ -22,7 +22,7 @@ class RequestTimeLogger:
 
         self.total_seconds: float
         self.operation_name: str
-        self.requests_log_msg: str
+        self.requests_log_msg: str = ""
 
         # Register callbacks
         logger.info("Setting up logger - registering callbacks on context")
